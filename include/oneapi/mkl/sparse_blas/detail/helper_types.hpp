@@ -29,8 +29,6 @@ namespace mkl {
 namespace sparse {
 namespace detail {
 
-struct matrix_handle;
-
 template <typename fpType>
 inline constexpr bool is_fp_supported_v =
     std::is_same_v<fpType, float> || std::is_same_v<fpType, double> ||

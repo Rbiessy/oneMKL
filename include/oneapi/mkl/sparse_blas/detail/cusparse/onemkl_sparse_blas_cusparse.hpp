@@ -17,32 +17,17 @@
 *
 **************************************************************************/
 
-#ifndef _ONEMKL_SPARSE_BLAS_TYPES_HPP_
-#define _ONEMKL_SPARSE_BLAS_TYPES_HPP_
+#ifndef _ONEMKL_SPARSE_BLAS_DETAIL_CUSPARSE_ONEMKL_SPARSE_BLAS_CUSPARSE_HPP_
+#define _ONEMKL_SPARSE_BLAS_DETAIL_CUSPARSE_ONEMKL_SPARSE_BLAS_CUSPARSE_HPP_
 
-#include "oneapi/mkl/types.hpp"
-#include "detail/data_types.hpp"
-#include "detail/operation_types.hpp"
+#include "oneapi/mkl/detail/export.hpp"
+#include "oneapi/mkl/sparse_blas/detail/helper_types.hpp"
+#include "oneapi/mkl/sparse_blas/types.hpp"
 
-/**
- * @file Include and define the sparse types that are common between close-source MKL API and oneMKL API.
-*/
+namespace oneapi::mkl::sparse::cusparse {
 
-namespace oneapi {
-namespace mkl {
-namespace sparse {
+#include "oneapi/mkl/sparse_blas/detail/onemkl_sparse_blas_backends.hxx"
 
-enum class matrix_property : char {
-    symmetric = 0x00,
-    sorted = 0x01, /* CSR, CSC, BSR only */
-};
+} // namespace oneapi::mkl::sparse::cusparse
 
-enum class trsv_alg : char {
-    default_alg = 0x00,
-};
-
-} // namespace sparse
-} // namespace mkl
-} // namespace oneapi
-
-#endif // _ONEMKL_SPARSE_BLAS_TYPES_HPP_
+#endif // _ONEMKL_SPARSE_BLAS_DETAIL_CUSPARSE_ONEMKL_SPARSE_BLAS_CUSPARSE_HPP_

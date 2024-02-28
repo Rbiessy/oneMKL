@@ -42,9 +42,10 @@ namespace {
 template <typename fpType, typename intType>
 int test(sycl::device *dev, intType m, double density_A_matrix, oneapi::mkl::index_base index,
          oneapi::mkl::uplo uplo_val, oneapi::mkl::transpose transpose_val,
-         oneapi::mkl::diag diag_val, bool use_optimize) {
+         oneapi::mkl::diag diag_val) {
     sycl::queue main_queue(*dev, exception_handler_t());
 
+    oneapi::mkl::sparse::trsv_alg alg = oneapi::mkl::sparse::trsv_alg::default_alg;
     intType int_index = (index == oneapi::mkl::index_base::zero) ? 0 : 1;
     const std::size_t mu = static_cast<std::size_t>(m);
 
@@ -67,12 +68,8 @@ int test(sycl::device *dev, intType m, double density_A_matrix, oneapi::mkl::ind
     std::vector<fpType> y_host(mu, -2.0f);
     std::vector<fpType> y_ref_host(y_host);
 
-    // Intel oneMKL does not support unsorted data if
-    // `sparse::optimize_trsv()` is not called first.
-    if (use_optimize) {
-        // Shuffle ordering of column indices/values to test sortedness
-        shuffle_data(ia_host.data(), ja_host.data(), a_host.data(), mu);
-    }
+    // Shuffle ordering of column indices/values to test sortedness
+    shuffle_data(ia_host.data(), ja_host.data(), a_host.data(), mu);
 
     auto ia_buf = make_buffer(ia_host);
     auto ja_buf = make_buffer(ja_host);
@@ -80,23 +77,40 @@ int test(sycl::device *dev, intType m, double density_A_matrix, oneapi::mkl::ind
     auto x_buf = make_buffer(x_host);
     auto y_buf = make_buffer(y_host);
 
-    sycl::event ev_release;
-    oneapi::mkl::sparse::matrix_handle_t handle = nullptr;
+    sycl::event ev_release, destroy_x, destroy_y, destroy_a;
+    oneapi::mkl::sparse::dense_vector_handle_t x_handle = nullptr, y_handle = nullptr;
+    oneapi::mkl::sparse::matrix_handle_t a_handle = nullptr;
+    oneapi::mkl::sparse::trsv_descr_t trsv_descr = nullptr;
     try {
-        CALL_RT_OR_CT(oneapi::mkl::sparse::init_matrix_handle, main_queue, &handle);
+        CALL_RT_OR_CT(oneapi::mkl::sparse::create_dense_vector, main_queue, &x_handle, m, x_buf);
+        CALL_RT_OR_CT(oneapi::mkl::sparse::create_dense_vector, main_queue, &y_handle, m, y_buf);
 
-        CALL_RT_OR_CT(oneapi::mkl::sparse::set_csr_data, main_queue, handle, m, m, nnz, index,
-                      ia_buf, ja_buf, a_buf);
+        CALL_RT_OR_CT(oneapi::mkl::sparse::create_csr_matrix, main_queue, &a_handle, m, m, nnz,
+                      index, ia_buf, ja_buf, a_buf);
 
-        if (use_optimize) {
-            CALL_RT_OR_CT(oneapi::mkl::sparse::optimize_trsv, main_queue, uplo_val, transpose_val,
-                          diag_val, handle);
-        }
+        CALL_RT_OR_CT(oneapi::mkl::sparse::init_trsv_descr<fpType>, main_queue, &trsv_descr);
 
-        CALL_RT_OR_CT(oneapi::mkl::sparse::trsv, main_queue, uplo_val, transpose_val, diag_val,
-                      handle, x_buf, y_buf);
+        sycl::event buffer_size_ev;
+        std::int64_t temp_buffer_size = 0;
+        CALL_RT_OR_CT(buffer_size_ev = oneapi::mkl::sparse::trsv_buffer_size, main_queue, uplo_val,
+                      transpose_val, diag_val, a_handle, x_handle, y_handle, alg, trsv_descr,
+                      temp_buffer_size);
+        buffer_size_ev.wait_and_throw();
 
-        CALL_RT_OR_CT(ev_release = oneapi::mkl::sparse::release_matrix_handle, main_queue, &handle);
+        sycl::buffer<std::uint8_t, 1> trsv_temp_buffer(
+            (sycl::range<1>(static_cast<std::size_t>(temp_buffer_size))));
+        CALL_RT_OR_CT(oneapi::mkl::sparse::optimize_trsv, main_queue, uplo_val, transpose_val,
+                      diag_val, a_handle, alg, trsv_descr, temp_buffer_size, trsv_temp_buffer);
+
+        sycl::event trsv_ev;
+        CALL_RT_OR_CT(trsv_ev = oneapi::mkl::sparse::trsv, main_queue, uplo_val, transpose_val,
+                      diag_val, a_handle, x_handle, y_handle, alg, trsv_descr);
+        trsv_ev.wait_and_throw();
+
+        CALL_RT_OR_CT(ev_release = oneapi::mkl::sparse::release_trsv_descr, main_queue, trsv_descr);
+        CALL_RT_OR_CT(destroy_x = oneapi::mkl::sparse::destroy_dense_vector, main_queue, x_handle);
+        CALL_RT_OR_CT(destroy_y = oneapi::mkl::sparse::destroy_dense_vector, main_queue, y_handle);
+        CALL_RT_OR_CT(destroy_a = oneapi::mkl::sparse::destroy_csr_matrix, main_queue, a_handle);
     }
     catch (const sycl::exception &e) {
         std::cout << "Caught synchronous SYCL exception during sparse TRSV:\n"
@@ -105,7 +119,15 @@ int test(sycl::device *dev, intType m, double density_A_matrix, oneapi::mkl::ind
         return 0;
     }
     catch (const oneapi::mkl::unimplemented &e) {
-        wait_and_free(main_queue, &handle);
+        main_queue.wait();
+        CALL_RT_OR_CT(ev_release = oneapi::mkl::sparse::release_trsv_descr, main_queue, trsv_descr);
+        CALL_RT_OR_CT(destroy_x = oneapi::mkl::sparse::destroy_dense_vector, main_queue, x_handle);
+        CALL_RT_OR_CT(destroy_y = oneapi::mkl::sparse::destroy_dense_vector, main_queue, y_handle);
+        CALL_RT_OR_CT(destroy_a = oneapi::mkl::sparse::destroy_csr_matrix, main_queue, a_handle);
+        ev_release.wait();
+        destroy_x.wait();
+        destroy_y.wait();
+        destroy_a.wait();
         return test_skipped;
     }
     catch (const std::runtime_error &error) {
@@ -123,6 +145,9 @@ int test(sycl::device *dev, intType m, double density_A_matrix, oneapi::mkl::ind
     bool valid = check_equal_vector(y_acc, y_ref_host);
 
     ev_release.wait_and_throw();
+    destroy_x.wait_and_throw();
+    destroy_y.wait_and_throw();
+    destroy_a.wait_and_throw();
     return static_cast<int>(valid);
 }
 
@@ -145,41 +170,30 @@ auto test_helper(sycl::device *dev, oneapi::mkl::transpose transpose_val, int &n
     oneapi::mkl::uplo lower = oneapi::mkl::uplo::lower;
     oneapi::mkl::diag nonunit = oneapi::mkl::diag::nonunit;
     int m = 277;
-    bool use_optimize = true;
 
     // Basic test
-    EXPECT_TRUE_OR_FUTURE_SKIP(test<fpType>(dev, m, density_A_matrix, index_zero, lower,
-                                            transpose_val, nonunit, use_optimize),
-                               num_passed, num_skipped);
+    EXPECT_TRUE_OR_FUTURE_SKIP(
+        test<fpType>(dev, m, density_A_matrix, index_zero, lower, transpose_val, nonunit),
+        num_passed, num_skipped);
     // Test index_base 1
     EXPECT_TRUE_OR_FUTURE_SKIP(test<fpType>(dev, m, density_A_matrix, oneapi::mkl::index_base::one,
-                                            lower, transpose_val, nonunit, use_optimize),
+                                            lower, transpose_val, nonunit),
                                num_passed, num_skipped);
     // Test upper triangular matrix
-    EXPECT_TRUE_OR_FUTURE_SKIP(
-        test<fpType>(dev, m, density_A_matrix, index_zero, oneapi::mkl::uplo::upper, transpose_val,
-                     nonunit, use_optimize),
-        num_passed, num_skipped);
+    EXPECT_TRUE_OR_FUTURE_SKIP(test<fpType>(dev, m, density_A_matrix, index_zero,
+                                            oneapi::mkl::uplo::upper, transpose_val, nonunit),
+                               num_passed, num_skipped);
     // Test unit diagonal matrix
     EXPECT_TRUE_OR_FUTURE_SKIP(test<fpType>(dev, m, density_A_matrix, index_zero, lower,
-                                            transpose_val, oneapi::mkl::diag::unit, use_optimize),
+                                            transpose_val, oneapi::mkl::diag::unit),
                                num_passed, num_skipped);
     // Temporarily disable trsv using long indices on GPU
     if (!dev->is_gpu()) {
         // Test int64 indices
-        EXPECT_TRUE_OR_FUTURE_SKIP(test<fpType>(dev, 15L, density_A_matrix, index_zero, lower,
-                                                transpose_val, nonunit, use_optimize),
-                                   num_passed, num_skipped);
+        EXPECT_TRUE_OR_FUTURE_SKIP(
+            test<fpType>(dev, 15L, density_A_matrix, index_zero, lower, transpose_val, nonunit),
+            num_passed, num_skipped);
     }
-    // Test lower without optimize_trsv
-    EXPECT_TRUE_OR_FUTURE_SKIP(
-        test<fpType>(dev, m, density_A_matrix, index_zero, lower, transpose_val, nonunit, false),
-        num_passed, num_skipped);
-    // Test upper without optimize_trsv
-    EXPECT_TRUE_OR_FUTURE_SKIP(
-        test<fpType>(dev, m, density_A_matrix, index_zero, oneapi::mkl::uplo::upper, transpose_val,
-                     nonunit, false),
-        num_passed, num_skipped);
 }
 
 TEST_P(SparseTrsvBufferTests, RealSinglePrecision) {

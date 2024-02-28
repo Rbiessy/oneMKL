@@ -17,6 +17,9 @@
 * SPDX-License-Identifier: Apache-2.0
 *******************************************************************************/
 
+#ifndef _ONEMKL_SPARSE_BLAS_BACKENDS_MKL_COMMON_MKL_HELPER_HPP_
+#define _ONEMKL_SPARSE_BLAS_BACKENDS_MKL_COMMON_MKL_HELPER_HPP_
+
 // MKLCPU and MKLGPU backends include
 // This include defines its own oneapi::mkl::sparse namespace with some of the types that are used here: matrix_handle_t, index_base, transpose, uolo, diag.
 #include <oneapi/mkl/spblas.hpp>
@@ -54,3 +57,5 @@ inline auto get_handle(detail::matrix_handle *handle) {
 #define FOR_EACH_FP_AND_INT_TYPE(INSTANTIATE_MACRO)                   \
     FOR_EACH_FP_AND_INT_TYPE_HELPER(INSTANTIATE_MACRO, std::int32_t); \
     FOR_EACH_FP_AND_INT_TYPE_HELPER(INSTANTIATE_MACRO, std::int64_t)
+
+#endif // _ONEMKL_SPARSE_BLAS_BACKENDS_MKL_COMMON_MKL_HELPER_HPP_

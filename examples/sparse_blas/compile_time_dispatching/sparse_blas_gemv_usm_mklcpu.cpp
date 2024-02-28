@@ -229,7 +229,7 @@ int main(int /*argc*/, char ** /*argv*/) {
     print_example_banner();
 
     try {
-        // TODO: Add cuSPARSE compile-time dispatcher in this example once it is supported.
+        // TODO(Romain): Add cuSPARSE compile-time dispatcher in this example once it is supported.
         sycl::device cpu_dev(sycl::cpu_selector_v);
 
         std::cout << "Running Sparse BLAS GEMV USM example on CPU device." << std::endl;

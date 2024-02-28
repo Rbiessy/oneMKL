@@ -30,39 +30,120 @@ static oneapi::mkl::detail::table_initializer<mkl::domain::sparse_blas,
                                               sparse_blas_function_table_t>
     function_tables;
 
-void init_matrix_handle(sycl::queue &queue, matrix_handle_t *p_handle) {
-    auto libkey = get_device_id(queue);
-    function_tables[libkey].init_matrix_handle(queue, p_handle);
-}
-
-sycl::event release_matrix_handle(sycl::queue &queue, matrix_handle_t *p_handle,
-                                  const std::vector<sycl::event> &dependencies) {
-    auto libkey = get_device_id(queue);
-    return function_tables[libkey].release_matrix_handle(queue, p_handle, dependencies);
-}
-
-#define DEFINE_SET_CSR_DATA(FP_TYPE, FP_SUFFIX, INT_TYPE, INT_SUFFIX)                              \
+#define DEFINE_CREATE_DENSE_VECTOR(FP_TYPE, FP_SUFFIX)                                             \
     template <>                                                                                    \
-    void set_csr_data(sycl::queue &queue, matrix_handle_t handle, INT_TYPE num_rows,               \
-                      INT_TYPE num_cols, INT_TYPE nnz, index_base index,                           \
-                      sycl::buffer<INT_TYPE, 1> &row_ptr, sycl::buffer<INT_TYPE, 1> &col_ind,      \
-                      sycl::buffer<FP_TYPE, 1> &val) {                                             \
+    void create_dense_vector(sycl::queue &queue, dense_vector_handle_t *p_dvhandle,                \
+                             std::int64_t size, sycl::buffer<FP_TYPE, 1> &val) {                   \
         auto libkey = get_device_id(queue);                                                        \
-        function_tables[libkey].set_csr_data_buffer##FP_SUFFIX##INT_SUFFIX(                        \
-            queue, handle, num_rows, num_cols, nnz, index, row_ptr, col_ind, val);                 \
+        function_tables[libkey].create_dense_vector_buffer##FP_SUFFIX(queue, p_dvhandle, size,     \
+                                                                      val);                        \
     }                                                                                              \
     template <>                                                                                    \
-    sycl::event set_csr_data(sycl::queue &queue, matrix_handle_t handle, INT_TYPE num_rows,        \
-                             INT_TYPE num_cols, INT_TYPE nnz, index_base index, INT_TYPE *row_ptr, \
-                             INT_TYPE *col_ind, FP_TYPE *val,                                      \
-                             const std::vector<sycl::event> &dependencies) {                       \
+    sycl::event create_dense_vector(sycl::queue &queue, dense_vector_handle_t *p_dvhandle,         \
+                                    std::int64_t size, FP_TYPE *val,                               \
+                                    const std::vector<sycl::event> &dependencies) {                \
         auto libkey = get_device_id(queue);                                                        \
-        return function_tables[libkey].set_csr_data_usm##FP_SUFFIX##INT_SUFFIX(                    \
-            queue, handle, num_rows, num_cols, nnz, index, row_ptr, col_ind, val, dependencies);   \
+        return function_tables[libkey].create_dense_vector_usm##FP_SUFFIX(queue, p_dvhandle, size, \
+                                                                          val, dependencies);      \
+    }
+FOR_EACH_FP_TYPE(DEFINE_CREATE_DENSE_VECTOR)
+#undef DEFINE_CREATE_DENSE_VECTOR
+
+#define DEFINE_CREATE_DENSE_MATRIX(FP_TYPE, FP_SUFFIX)                                             \
+    template <>                                                                                    \
+    void create_dense_matrix(sycl::queue &queue, dense_matrix_handle_t *p_dmhandle,                \
+                             std::int64_t num_rows, std::int64_t num_cols, std::int64_t ld,        \
+                             layout dense_layout, sycl::buffer<FP_TYPE, 1> &val) {                 \
+        auto libkey = get_device_id(queue);                                                        \
+        function_tables[libkey].create_dense_matrix_buffer##FP_SUFFIX(                             \
+            queue, p_dmhandle, num_rows, num_cols, ld, dense_layout, val);                         \
+    }                                                                                              \
+    template <>                                                                                    \
+    sycl::event create_dense_matrix(sycl::queue &queue, dense_matrix_handle_t *p_dmhandle,         \
+                                    std::int64_t num_rows, std::int64_t num_cols, std::int64_t ld, \
+                                    layout dense_layout, FP_TYPE *val,                             \
+                                    const std::vector<sycl::event> &dependencies) {                \
+        auto libkey = get_device_id(queue);                                                        \
+        return function_tables[libkey].create_dense_matrix_usm##FP_SUFFIX(                         \
+            queue, p_dmhandle, num_rows, num_cols, ld, dense_layout, val, dependencies);           \
+    }
+FOR_EACH_FP_TYPE(DEFINE_CREATE_DENSE_MATRIX)
+#undef DEFINE_CREATE_DENSE_MATRIX
+
+#define DEFINE_CREATE_CSR_MATRIX(FP_TYPE, FP_SUFFIX, INT_TYPE, INT_SUFFIX)                         \
+    template <>                                                                                    \
+    void create_csr_matrix(sycl::queue &queue, matrix_handle_t *p_smhandle, std::int64_t num_rows, \
+                           std::int64_t num_cols, std::int64_t nnz, index_base index,              \
+                           sycl::buffer<INT_TYPE, 1> &row_ptr, sycl::buffer<INT_TYPE, 1> &col_ind, \
+                           sycl::buffer<FP_TYPE, 1> &val) {                                        \
+        auto libkey = get_device_id(queue);                                                        \
+        function_tables[libkey].create_csr_matrix_buffer##FP_SUFFIX##INT_SUFFIX(                   \
+            queue, p_smhandle, num_rows, num_cols, nnz, index, row_ptr, col_ind, val);             \
+    }                                                                                              \
+    template <>                                                                                    \
+    sycl::event create_csr_matrix(sycl::queue &queue, matrix_handle_t *p_smhandle,                 \
+                                  std::int64_t num_rows, std::int64_t num_cols, std::int64_t nnz,  \
+                                  index_base index, INT_TYPE *row_ptr, INT_TYPE *col_ind,          \
+                                  FP_TYPE *val, const std::vector<sycl::event> &dependencies) {    \
+        auto libkey = get_device_id(queue);                                                        \
+        return function_tables[libkey].create_csr_matrix_usm##FP_SUFFIX##INT_SUFFIX(               \
+            queue, p_smhandle, num_rows, num_cols, nnz, index, row_ptr, col_ind, val,              \
+            dependencies);                                                                         \
     }
 
-FOR_EACH_FP_AND_INT_TYPE(DEFINE_SET_CSR_DATA)
-#undef DEFINE_SET_CSR_DATA
+FOR_EACH_FP_AND_INT_TYPE(DEFINE_CREATE_CSR_MATRIX)
+#undef DEFINE_CREATE_CSR_MATRIX
+
+sycl::event destroy_dense_vector(sycl::queue &queue, dense_vector_handle_t p_dvhandle,
+                                 const std::vector<sycl::event> &dependencies) {
+    auto libkey = get_device_id(queue);
+    return function_tables[libkey].destroy_dense_vector(queue, p_dvhandle, dependencies);
+}
+
+sycl::event destroy_dense_matrix(sycl::queue &queue, dense_matrix_handle_t p_dmhandle,
+                                 const std::vector<sycl::event> &dependencies) {
+    auto libkey = get_device_id(queue);
+    return function_tables[libkey].destroy_dense_matrix(queue, p_dmhandle, dependencies);
+}
+
+sycl::event destroy_csr_matrix(sycl::queue &queue, matrix_handle_t p_smhandle,
+                               const std::vector<sycl::event> &dependencies) {
+    auto libkey = get_device_id(queue);
+    return function_tables[libkey].destroy_csr_matrix(queue, p_smhandle, dependencies);
+}
+
+void set_matrix_property(sycl::queue &queue, matrix_handle_t smhandle,
+                         matrix_property property_value) {
+    auto libkey = get_device_id(queue);
+    return function_tables[libkey].set_matrix_property(queue, smhandle, property_value);
+}
+
+#define DEFINE_INIT_TRSV_DESCR(FP_TYPE, FP_SUFFIX)                                      \
+    template <>                                                                         \
+    void init_trsv_descr<FP_TYPE>(sycl::queue & queue, trsv_descr_t * p_trsv_descr) {   \
+        auto libkey = get_device_id(queue);                                             \
+        return function_tables[libkey].init_trsv_descr##FP_SUFFIX(queue, p_trsv_descr); \
+    }
+FOR_EACH_FP_TYPE(DEFINE_INIT_TRSV_DESCR)
+#undef DEFINE_INIT_TRSV_DESCR
+
+sycl::event release_trsv_descr(sycl::queue &queue, trsv_descr_t trsv_descr,
+                               const std::vector<sycl::event> &dependencies) {
+    auto libkey = get_device_id(queue);
+    return function_tables[libkey].release_trsv_descr(queue, trsv_descr, dependencies);
+}
+
+// Temporary buffer size
+sycl::event trsv_buffer_size(sycl::queue &queue, uplo uplo_val, transpose transpose_val,
+                             diag diag_val, matrix_handle_t A_handle, dense_vector_handle_t x,
+                             dense_vector_handle_t y, trsv_alg alg, trsv_descr_t trsv_descr,
+                             std::int64_t &temp_buffer_size,
+                             const std::vector<sycl::event> &dependencies) {
+    auto libkey = get_device_id(queue);
+    return function_tables[libkey].trsv_buffer_size(queue, uplo_val, transpose_val, diag_val,
+                                                    A_handle, x, y, alg, trsv_descr,
+                                                    temp_buffer_size, dependencies);
+}
 
 sycl::event optimize_gemm(sycl::queue &queue, transpose transpose_A, matrix_handle_t handle,
                           const std::vector<sycl::event> &dependencies) {
@@ -84,11 +165,23 @@ sycl::event optimize_gemv(sycl::queue &queue, transpose transpose_val, matrix_ha
     return function_tables[libkey].optimize_gemv(queue, transpose_val, handle, dependencies);
 }
 
-sycl::event optimize_trsv(sycl::queue &queue, uplo uplo_val, transpose transpose_val, diag diag_val,
-                          matrix_handle_t handle, const std::vector<sycl::event> &dependencies) {
+void optimize_trsv(sycl::queue &queue, uplo uplo_val, transpose transpose_val, diag diag_val,
+                   matrix_handle_t A_handle, trsv_alg alg, trsv_descr_t trsv_descr,
+                   std::int64_t temp_buffer_size, sycl::buffer<std::uint8_t, 1> temp_buffer) {
     auto libkey = get_device_id(queue);
-    return function_tables[libkey].optimize_trsv(queue, uplo_val, transpose_val, diag_val, handle,
-                                                 dependencies);
+    return function_tables[libkey].optimize_trsv_buffer(queue, uplo_val, transpose_val, diag_val,
+                                                        A_handle, alg, trsv_descr, temp_buffer_size,
+                                                        temp_buffer);
+}
+
+sycl::event optimize_trsv(sycl::queue &queue, uplo uplo_val, transpose transpose_val, diag diag_val,
+                          matrix_handle_t A_handle, trsv_alg alg, trsv_descr_t trsv_descr,
+                          std::int64_t temp_buffer_size, void *temp_buffer,
+                          const std::vector<sycl::event> &dependencies) {
+    auto libkey = get_device_id(queue);
+    return function_tables[libkey].optimize_trsv_usm(queue, uplo_val, transpose_val, diag_val,
+                                                     A_handle, alg, trsv_descr, temp_buffer_size,
+                                                     temp_buffer, dependencies);
 }
 
 #define DEFINE_GEMV(FP_TYPE, FP_SUFFIX)                                                           \
@@ -111,27 +204,6 @@ sycl::event optimize_trsv(sycl::queue &queue, uplo uplo_val, transpose transpose
 
 FOR_EACH_FP_TYPE(DEFINE_GEMV)
 #undef DEFINE_GEMV
-
-#define DEFINE_TRSV(FP_TYPE, FP_SUFFIX)                                                          \
-    template <>                                                                                  \
-    void trsv(sycl::queue &queue, uplo uplo_val, transpose transpose_val, diag diag_val,         \
-              matrix_handle_t A_handle, sycl::buffer<FP_TYPE, 1> &x,                             \
-              sycl::buffer<FP_TYPE, 1> &y) {                                                     \
-        auto libkey = get_device_id(queue);                                                      \
-        function_tables[libkey].trsv_buffer##FP_SUFFIX(queue, uplo_val, transpose_val, diag_val, \
-                                                       A_handle, x, y);                          \
-    }                                                                                            \
-    template <>                                                                                  \
-    sycl::event trsv(sycl::queue &queue, uplo uplo_val, transpose transpose_val, diag diag_val,  \
-                     matrix_handle_t A_handle, const FP_TYPE *x, FP_TYPE *y,                     \
-                     const std::vector<sycl::event> &dependencies) {                             \
-        auto libkey = get_device_id(queue);                                                      \
-        return function_tables[libkey].trsv_usm##FP_SUFFIX(                                      \
-            queue, uplo_val, transpose_val, diag_val, A_handle, x, y, dependencies);             \
-    }
-
-FOR_EACH_FP_TYPE(DEFINE_TRSV)
-#undef DEFINE_TRSV
 
 #define DEFINE_GEMM(FP_TYPE, FP_SUFFIX)                                                          \
     template <>                                                                                  \
@@ -158,5 +230,14 @@ FOR_EACH_FP_TYPE(DEFINE_TRSV)
 
 FOR_EACH_FP_TYPE(DEFINE_GEMM)
 #undef DEFINE_GEMM
+
+sycl::event trsv(sycl::queue &queue, uplo uplo_val, transpose transpose_val, diag diag_val,
+                 matrix_handle_t A_handle, dense_vector_handle_t x, dense_vector_handle_t y,
+                 trsv_alg alg, trsv_descr_t trsv_descr,
+                 const std::vector<sycl::event> &dependencies) {
+    auto libkey = get_device_id(queue);
+    return function_tables[libkey].trsv(queue, uplo_val, transpose_val, diag_val, A_handle, x, y,
+                                        alg, trsv_descr, dependencies);
+}
 
 } // namespace oneapi::mkl::sparse

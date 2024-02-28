@@ -17,32 +17,24 @@
 *
 **************************************************************************/
 
-#ifndef _ONEMKL_SPARSE_BLAS_TYPES_HPP_
-#define _ONEMKL_SPARSE_BLAS_TYPES_HPP_
+#ifndef _ONEMKL_SPARSE_BLAS_DETAIL_DATA_TYPES_HPP_
+#define _ONEMKL_SPARSE_BLAS_DETAIL_DATA_TYPES_HPP_
 
-#include "oneapi/mkl/types.hpp"
-#include "detail/data_types.hpp"
-#include "detail/operation_types.hpp"
+namespace oneapi::mkl::sparse {
 
-/**
- * @file Include and define the sparse types that are common between close-source MKL API and oneMKL API.
-*/
+namespace detail {
 
-namespace oneapi {
-namespace mkl {
-namespace sparse {
+// Each backend can create its own handle type or re-use the native handle types that will be reinterpret_cast'ed to the types below
+struct dense_matrix_handle;
+struct dense_vector_handle;
+struct matrix_handle;
 
-enum class matrix_property : char {
-    symmetric = 0x00,
-    sorted = 0x01, /* CSR, CSC, BSR only */
-};
+} // namespace detail
 
-enum class trsv_alg : char {
-    default_alg = 0x00,
-};
+typedef struct detail::dense_matrix_handle *dense_matrix_handle_t;
+typedef struct detail::dense_vector_handle *dense_vector_handle_t;
+typedef struct detail::matrix_handle *matrix_handle_t;
 
-} // namespace sparse
-} // namespace mkl
-} // namespace oneapi
+} // namespace oneapi::mkl::sparse
 
-#endif // _ONEMKL_SPARSE_BLAS_TYPES_HPP_
+#endif // _ONEMKL_SPARSE_BLAS_DETAIL_DATA_TYPES_HPP_

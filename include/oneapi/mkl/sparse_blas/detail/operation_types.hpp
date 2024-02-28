@@ -17,32 +17,20 @@
 *
 **************************************************************************/
 
-#ifndef _ONEMKL_SPARSE_BLAS_TYPES_HPP_
-#define _ONEMKL_SPARSE_BLAS_TYPES_HPP_
+#ifndef _ONEMKL_SPARSE_BLAS_DETAIL_OPERATION_TYPES_HPP_
+#define _ONEMKL_SPARSE_BLAS_DETAIL_OPERATION_TYPES_HPP_
 
-#include "oneapi/mkl/types.hpp"
-#include "detail/data_types.hpp"
-#include "detail/operation_types.hpp"
+namespace oneapi::mkl::sparse {
 
-/**
- * @file Include and define the sparse types that are common between close-source MKL API and oneMKL API.
-*/
+namespace detail {
 
-namespace oneapi {
-namespace mkl {
-namespace sparse {
+// Each backend can create its own descriptor type or re-use the native descriptor types that will be reinterpret_cast'ed to the types below
+struct trsv_descr;
 
-enum class matrix_property : char {
-    symmetric = 0x00,
-    sorted = 0x01, /* CSR, CSC, BSR only */
-};
+} // namespace detail
 
-enum class trsv_alg : char {
-    default_alg = 0x00,
-};
+typedef struct detail::trsv_descr *trsv_descr_t;
 
-} // namespace sparse
-} // namespace mkl
-} // namespace oneapi
+} // namespace oneapi::mkl::sparse
 
-#endif // _ONEMKL_SPARSE_BLAS_TYPES_HPP_
+#endif // _ONEMKL_SPARSE_BLAS_DETAIL_OPERATION_TYPES_HPP_
