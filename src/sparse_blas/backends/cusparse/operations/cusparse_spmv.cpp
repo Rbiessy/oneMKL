@@ -1,0 +1,222 @@
+/***************************************************************************
+*  Copyright (C) Codeplay Software Limited
+*  Licensed under the Apache License, Version 2.0 (the "License");
+*  you may not use this file except in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*      http://www.apache.org/licenses/LICENSE-2.0
+*
+*  For your convenience, a copy of the License has been included in this
+*  repository.
+*
+*  Unless required by applicable law or agreed to in writing, software
+*  distributed under the License is distributed on an "AS IS" BASIS,
+*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+*  See the License for the specific language governing permissions and
+*  limitations under the License.
+*
+**************************************************************************/
+
+#include "oneapi/mkl/sparse_blas/detail/cusparse/onemkl_sparse_blas_cusparse.hpp"
+
+#include "sparse_blas/backends/cusparse/cusparse_error.hpp"
+#include "sparse_blas/backends/cusparse/cusparse_helper.hpp"
+#include "sparse_blas/backends/cusparse/cusparse_task.hpp"
+#include "sparse_blas/backends/cusparse/cusparse_handles.hpp"
+#include "sparse_blas/common_op_verification.hpp"
+#include "sparse_blas/macros.hpp"
+#include "sparse_blas/sycl_helper.hpp"
+
+namespace oneapi::mkl::sparse {
+
+// Complete the definition of the incomplete type
+struct spmv_descr {
+    detail::generic_container workspace;
+};
+
+} // namespace oneapi::mkl::sparse
+
+namespace oneapi::mkl::sparse::cusparse {
+
+void init_spmv_descr(sycl::queue & /*queue*/, spmv_descr_t *p_spmv_descr) {
+    *p_spmv_descr = new spmv_descr();
+}
+
+sycl::event release_spmv_descr(sycl::queue &queue, spmv_descr_t spmv_descr,
+                               const std::vector<sycl::event> &dependencies) {
+    return detail::submit_release(queue, spmv_descr, dependencies);
+}
+
+inline auto get_cuda_spmv_alg(spmv_alg alg) {
+    switch (alg) {
+        case spmv_alg::coo_alg1: return CUSPARSE_SPMV_COO_ALG1;
+        case spmv_alg::coo_alg2: return CUSPARSE_SPMV_COO_ALG2;
+        case spmv_alg::csr_alg1: return CUSPARSE_SPMV_CSR_ALG1;
+        case spmv_alg::csr_alg2: return CUSPARSE_SPMV_CSR_ALG2;
+        default: return CUSPARSE_SPMV_ALG_DEFAULT;
+    }
+}
+
+void check_valid_spmv(const std::string function_name, sycl::queue &queue,
+                      oneapi::mkl::transpose opA, oneapi::mkl::sparse::matrix_view A_view,
+                      oneapi::mkl::sparse::matrix_handle_t A_handle,
+                      oneapi::mkl::sparse::dense_vector_handle_t x_handle,
+                      oneapi::mkl::sparse::dense_vector_handle_t y_handle, const void *alpha,
+                      const void *beta) {
+    detail::check_valid_spmv_common(function_name, queue, opA, A_view, A_handle, x_handle, y_handle,
+                                    alpha, beta);
+    if (A_view.type_view != oneapi::mkl::sparse::matrix_descr::general) {
+        throw mkl::unimplemented(
+            "sparse_blas/cusparse", function_name,
+            "spmv does not support a `type_view` other than `matrix_descr::general`.");
+    }
+}
+
+void spmv_buffer_size(sycl::queue &queue, oneapi::mkl::transpose opA, const void *alpha,
+                      oneapi::mkl::sparse::matrix_view A_view,
+                      oneapi::mkl::sparse::matrix_handle_t A_handle,
+                      oneapi::mkl::sparse::dense_vector_handle_t x_handle, const void *beta,
+                      oneapi::mkl::sparse::dense_vector_handle_t y_handle,
+                      oneapi::mkl::sparse::spmv_alg alg,
+                      oneapi::mkl::sparse::spmv_descr_t /*spmv_descr*/,
+                      std::size_t &temp_buffer_size) {
+    check_valid_spmv(__FUNCTION__, queue, opA, A_view, A_handle, x_handle, y_handle, alpha, beta);
+    auto functor = [=, &temp_buffer_size](CusparseScopedContextHandler &sc) {
+        auto cu_handle = sc.get_handle(queue);
+        auto cu_a = A_handle->backend_handle;
+        auto cu_x = x_handle->backend_handle;
+        auto cu_y = y_handle->backend_handle;
+        auto cu_op = get_cuda_operation(opA);
+        auto cu_type = get_cuda_value_type(A_handle->value_container.data_type);
+        auto cu_alg = get_cuda_spmv_alg(alg);
+        auto status = cusparseSpMV_bufferSize(cu_handle, cu_op, alpha, cu_a, cu_x, beta, cu_y,
+                                              cu_type, cu_alg, &temp_buffer_size);
+        check_status(status, __FUNCTION__);
+    };
+    auto event = dispatch_submit(__FUNCTION__, queue, functor, A_handle, x_handle, y_handle);
+    event.wait_and_throw();
+}
+
+void spmv_optimize_impl(cusparseHandle_t cu_handle, oneapi::mkl::transpose opA, const void *alpha,
+                        oneapi::mkl::sparse::matrix_handle_t A_handle,
+                        oneapi::mkl::sparse::dense_vector_handle_t x_handle, const void *beta,
+                        oneapi::mkl::sparse::dense_vector_handle_t y_handle,
+                        oneapi::mkl::sparse::spmv_alg alg, void *workspace_ptr) {
+    auto cu_a = A_handle->backend_handle;
+    auto cu_x = x_handle->backend_handle;
+    auto cu_y = y_handle->backend_handle;
+    auto cu_op = get_cuda_operation(opA);
+    auto cu_type = get_cuda_value_type(A_handle->value_container.data_type);
+    auto cu_alg = get_cuda_spmv_alg(alg);
+    auto status = cusparseSpMV_preprocess(cu_handle, cu_op, alpha, cu_a, cu_x, beta, cu_y, cu_type,
+                                          cu_alg, workspace_ptr);
+    check_status(status, "optimize_spmv");
+}
+
+void spmv_optimize(sycl::queue &queue, oneapi::mkl::transpose opA, const void *alpha,
+                   oneapi::mkl::sparse::matrix_view A_view,
+                   oneapi::mkl::sparse::matrix_handle_t A_handle,
+                   oneapi::mkl::sparse::dense_vector_handle_t x_handle, const void *beta,
+                   oneapi::mkl::sparse::dense_vector_handle_t y_handle,
+                   oneapi::mkl::sparse::spmv_alg alg, oneapi::mkl::sparse::spmv_descr_t spmv_descr,
+                   sycl::buffer<std::uint8_t, 1> workspace) {
+    check_valid_spmv(__FUNCTION__, queue, opA, A_view, A_handle, x_handle, y_handle, alpha, beta);
+    if (!A_handle->all_use_buffer()) {
+        detail::throw_incompatible_container(__FUNCTION__);
+    }
+    // Copy the buffer to extend its lifetime until the descriptor is free'd.
+    spmv_descr->workspace.set_buffer_untyped(workspace);
+    if (alg == oneapi::mkl::sparse::spmv_alg::no_optimize_alg) {
+        return;
+    }
+    auto functor = [=](CusparseScopedContextHandler &sc,
+                       sycl::accessor<std::uint8_t> workspace_acc) {
+        auto cu_handle = sc.get_handle(queue);
+        auto workspace_ptr = sc.get_mem(workspace_acc);
+        spmv_optimize_impl(cu_handle, opA, alpha, A_handle, x_handle, beta, y_handle, alg,
+                           workspace_ptr);
+    };
+
+    sycl::accessor<std::uint8_t, 1> workspace_placeholder_acc(workspace);
+    auto event = dispatch_submit(__FUNCTION__, queue, functor, A_handle, workspace_placeholder_acc,
+                                 x_handle, y_handle);
+    event.wait_and_throw();
+}
+
+sycl::event spmv_optimize(sycl::queue &queue, oneapi::mkl::transpose opA, const void *alpha,
+                          oneapi::mkl::sparse::matrix_view A_view,
+                          oneapi::mkl::sparse::matrix_handle_t A_handle,
+                          oneapi::mkl::sparse::dense_vector_handle_t x_handle, const void *beta,
+                          oneapi::mkl::sparse::dense_vector_handle_t y_handle,
+                          oneapi::mkl::sparse::spmv_alg alg,
+                          oneapi::mkl::sparse::spmv_descr_t spmv_descr, void *workspace,
+                          const std::vector<sycl::event> &dependencies) {
+    check_valid_spmv(__FUNCTION__, queue, opA, A_view, A_handle, x_handle, y_handle, alpha, beta);
+    if (A_handle->all_use_buffer()) {
+        detail::throw_incompatible_container(__FUNCTION__);
+    }
+    spmv_descr->workspace.usm_ptr = workspace;
+    if (alg == oneapi::mkl::sparse::spmv_alg::no_optimize_alg) {
+        return detail::collapse_dependencies(queue, dependencies);
+    }
+    auto functor = [=](CusparseScopedContextHandler &sc) {
+        auto cu_handle = sc.get_handle(queue);
+        spmv_optimize_impl(cu_handle, opA, alpha, A_handle, x_handle, beta, y_handle, alg,
+                           workspace);
+    };
+
+    return dispatch_submit(__FUNCTION__, queue, dependencies, functor, A_handle, x_handle,
+                           y_handle);
+}
+
+sycl::event spmv(sycl::queue &queue, oneapi::mkl::transpose opA, const void *alpha,
+                 oneapi::mkl::sparse::matrix_view A_view,
+                 oneapi::mkl::sparse::matrix_handle_t A_handle,
+                 oneapi::mkl::sparse::dense_vector_handle_t x_handle, const void *beta,
+                 oneapi::mkl::sparse::dense_vector_handle_t y_handle,
+                 oneapi::mkl::sparse::spmv_alg alg, oneapi::mkl::sparse::spmv_descr_t spmv_descr,
+                 const std::vector<sycl::event> &dependencies) {
+    check_valid_spmv(__FUNCTION__, queue, opA, A_view, A_handle, x_handle, y_handle, alpha, beta);
+    if (A_handle->all_use_buffer() != spmv_descr->workspace.use_buffer()) {
+        detail::throw_incompatible_container(__FUNCTION__);
+    }
+    if (A_handle->all_use_buffer()) {
+        auto functor = [=](CusparseScopedContextHandler &sc,
+                           sycl::accessor<std::uint8_t> workspace_acc) {
+            auto cu_handle = sc.get_handle(queue);
+            auto workspace_ptr = sc.get_mem(workspace_acc);
+            auto cu_a = A_handle->backend_handle;
+            auto cu_x = x_handle->backend_handle;
+            auto cu_y = y_handle->backend_handle;
+            auto cu_op = get_cuda_operation(opA);
+            auto cu_type = get_cuda_value_type(A_handle->value_container.data_type);
+            auto cu_alg = get_cuda_spmv_alg(alg);
+            auto status = cusparseSpMV(cu_handle, cu_op, alpha, cu_a, cu_x, beta, cu_y, cu_type,
+                                       cu_alg, workspace_ptr);
+            check_status(status, __FUNCTION__);
+        };
+        sycl::accessor<std::uint8_t, 1> workspace_placeholder_acc(
+            spmv_descr->workspace.get_buffer<std::uint8_t>());
+        return dispatch_submit<true>(__FUNCTION__, queue, dependencies, functor, A_handle,
+                                     workspace_placeholder_acc, x_handle, y_handle);
+    }
+    else {
+        auto workspace_ptr = spmv_descr->workspace.usm_ptr;
+        auto functor = [=](CusparseScopedContextHandler &sc) {
+            auto cu_handle = sc.get_handle(queue);
+            auto cu_a = A_handle->backend_handle;
+            auto cu_x = x_handle->backend_handle;
+            auto cu_y = y_handle->backend_handle;
+            auto cu_op = get_cuda_operation(opA);
+            auto cu_type = get_cuda_value_type(A_handle->value_container.data_type);
+            auto cu_alg = get_cuda_spmv_alg(alg);
+            auto status = cusparseSpMV(cu_handle, cu_op, alpha, cu_a, cu_x, beta, cu_y, cu_type,
+                                       cu_alg, workspace_ptr);
+            check_status(status, __FUNCTION__);
+        };
+        return dispatch_submit(__FUNCTION__, queue, dependencies, functor, A_handle, x_handle,
+                               y_handle);
+    }
+}
+
+} // namespace oneapi::mkl::sparse::cusparse
