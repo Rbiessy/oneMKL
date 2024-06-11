@@ -95,6 +95,7 @@ void spmv_buffer_size(sycl::queue &queue, oneapi::mkl::transpose opA, const void
     };
     auto event = dispatch_submit(__FUNCTION__, queue, functor, A_handle, x_handle, y_handle);
     event.wait_and_throw();
+    std::cout << "temp_buffer_size=" << temp_buffer_size << std::endl;
 }
 
 void spmv_optimize_impl(cusparseHandle_t cu_handle, oneapi::mkl::transpose opA, const void *alpha,

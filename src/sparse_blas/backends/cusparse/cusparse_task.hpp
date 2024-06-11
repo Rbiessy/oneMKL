@@ -98,6 +98,7 @@ sycl::event dispatch_submit(const std::string &function_name, sycl::queue queue,
                             matrix_handle_t sm_handle,
                             sycl::accessor<std::uint8_t, 1> workspace_placeholder_acc,
                             Ts... other_containers) {
+    std::cout << "dispatch_submit: UseWorkspace=" << UseWorkspace << " use_buffer=" << sm_handle->all_use_buffer() << std::endl;
     if (sm_handle->all_use_buffer()) {
         detail::data_type value_type = sm_handle->get_value_type();
         detail::data_type int_type = sm_handle->get_int_type();
