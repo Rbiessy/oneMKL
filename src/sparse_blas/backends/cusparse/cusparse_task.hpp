@@ -74,9 +74,9 @@ void submit_host_task(sycl::handler &cgh, sycl::queue &queue, Functor functor,
 }
 
 template <typename Functor, typename... CaptureOnlyAcc>
-void submit_host_task(sycl::handler &cgh, sycl::queue &queue, Functor functor,
-                      sycl::accessor<std::uint8_t> workspace_placeholder_acc,
-                      CaptureOnlyAcc... capture_only_accessors) {
+void submit_host_task_with_acc(sycl::handler &cgh, sycl::queue &queue, Functor functor,
+                               sycl::accessor<std::uint8_t> workspace_placeholder_acc,
+                               CaptureOnlyAcc... capture_only_accessors) {
     // Only capture the accessors to ensure the dependencies are properly handled
     // The accessors's pointer have already been set to the native container types in previous functions
     cgh.require(workspace_placeholder_acc);
@@ -102,18 +102,19 @@ sycl::event dispatch_submit(const std::string &function_name, sycl::queue queue,
         detail::data_type value_type = sm_handle->get_value_type();
         detail::data_type int_type = sm_handle->get_int_type();
 
-#define ONEMKL_CUSPARSE_SUBMIT(FP_TYPE, INT_TYPE)                                                \
-    return queue.submit([&](sycl::handler &cgh) {                                                \
-        cgh.depends_on(dependencies);                                                            \
-        auto fp_accs = get_fp_accessors<FP_TYPE>(cgh, sm_handle, other_containers...);           \
-        auto int_accs = get_int_accessors<INT_TYPE>(cgh, sm_handle);                             \
-        if constexpr (UseWorkspace) {                                                            \
-            submit_host_task(cgh, queue, functor, workspace_placeholder_acc, fp_accs, int_accs); \
-        }                                                                                        \
-        else {                                                                                   \
-            (void)workspace_placeholder_acc;                                                     \
-            submit_host_task(cgh, queue, functor, fp_accs, int_accs);                            \
-        }                                                                                        \
+#define ONEMKL_CUSPARSE_SUBMIT(FP_TYPE, INT_TYPE)                                              \
+    return queue.submit([&](sycl::handler &cgh) {                                              \
+        cgh.depends_on(dependencies);                                                          \
+        auto fp_accs = get_fp_accessors<FP_TYPE>(cgh, sm_handle, other_containers...);         \
+        auto int_accs = get_int_accessors<INT_TYPE>(cgh, sm_handle);                           \
+        if constexpr (UseWorkspace) {                                                          \
+            submit_host_task_with_acc(cgh, queue, functor, workspace_placeholder_acc, fp_accs, \
+                                      int_accs);                                               \
+        }                                                                                      \
+        else {                                                                                 \
+            (void)workspace_placeholder_acc;                                                   \
+            submit_host_task(cgh, queue, functor, fp_accs, int_accs);                          \
+        }                                                                                      \
     })
 #define ONEMKL_CUSPARSE_SUBMIT_INT(FP_TYPE)            \
     if (int_type == detail::data_type::int32) {        \
