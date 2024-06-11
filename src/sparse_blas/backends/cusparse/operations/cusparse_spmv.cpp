@@ -32,6 +32,7 @@ namespace oneapi::mkl::sparse {
 // Complete the definition of the incomplete type
 struct spmv_descr {
     detail::generic_container workspace;
+    std::size_t temp_buffer_size = 0;   // TODO(Romain): Test temp_buffer_size is > 0 in some tests
 };
 
 } // namespace oneapi::mkl::sparse
@@ -78,8 +79,7 @@ void spmv_buffer_size(sycl::queue &queue, oneapi::mkl::transpose opA, const void
                       oneapi::mkl::sparse::dense_vector_handle_t x_handle, const void *beta,
                       oneapi::mkl::sparse::dense_vector_handle_t y_handle,
                       oneapi::mkl::sparse::spmv_alg alg,
-                      oneapi::mkl::sparse::spmv_descr_t /*spmv_descr*/,
-                      std::size_t &temp_buffer_size) {
+                      oneapi::mkl::sparse::spmv_descr_t spmv_descr, std::size_t &temp_buffer_size) {
     check_valid_spmv(__FUNCTION__, queue, opA, A_view, A_handle, x_handle, y_handle, alpha, beta);
     auto functor = [=, &temp_buffer_size](CusparseScopedContextHandler &sc) {
         auto cu_handle = sc.get_handle(queue);
@@ -95,6 +95,7 @@ void spmv_buffer_size(sycl::queue &queue, oneapi::mkl::transpose opA, const void
     };
     auto event = dispatch_submit(__FUNCTION__, queue, functor, A_handle, x_handle, y_handle);
     event.wait_and_throw();
+    spmv_descr->temp_buffer_size = temp_buffer_size;
     std::cout << "temp_buffer_size=" << temp_buffer_size << std::endl;
 }
 
@@ -130,17 +131,28 @@ void spmv_optimize(sycl::queue &queue, oneapi::mkl::transpose opA, const void *a
     if (alg == oneapi::mkl::sparse::spmv_alg::no_optimize_alg) {
         return;
     }
-    auto functor = [=](CusparseScopedContextHandler &sc,
-                       sycl::accessor<std::uint8_t> workspace_acc) {
-        auto cu_handle = sc.get_handle(queue);
-        auto workspace_ptr = sc.get_mem(workspace_acc);
-        spmv_optimize_impl(cu_handle, opA, alpha, A_handle, x_handle, beta, y_handle, alg,
-                           workspace_ptr);
-    };
 
-    sycl::accessor<std::uint8_t, 1> workspace_placeholder_acc(workspace);
-    auto event = dispatch_submit(__FUNCTION__, queue, functor, A_handle, workspace_placeholder_acc,
-                                 x_handle, y_handle);
+    sycl::event event;
+    if (spmv_descr->temp_buffer_size > 0) {
+        auto functor = [=](CusparseScopedContextHandler &sc,
+                        sycl::accessor<std::uint8_t> workspace_acc) {
+            auto cu_handle = sc.get_handle(queue);
+            auto workspace_ptr = sc.get_mem(workspace_acc);
+            spmv_optimize_impl(cu_handle, opA, alpha, A_handle, x_handle, beta, y_handle, alg,
+                            workspace_ptr);
+        };
+        sycl::accessor<std::uint8_t, 1> workspace_placeholder_acc(workspace);
+        event = dispatch_submit(__FUNCTION__, queue, functor, A_handle, workspace_placeholder_acc,
+                                x_handle, y_handle);
+    }
+    else {
+        auto functor = [=](CusparseScopedContextHandler &sc) {
+            auto cu_handle = sc.get_handle(queue);
+            spmv_optimize_impl(cu_handle, opA, alpha, A_handle, x_handle, beta, y_handle, alg,
+                            nullptr);
+        };
+        event = dispatch_submit(__FUNCTION__, queue, functor, A_handle, x_handle, y_handle);
+    }
     event.wait_and_throw();
 }
 
@@ -181,7 +193,9 @@ sycl::event spmv(sycl::queue &queue, oneapi::mkl::transpose opA, const void *alp
     if (A_handle->all_use_buffer() != spmv_descr->workspace.use_buffer()) {
         detail::throw_incompatible_container(__FUNCTION__);
     }
-    if (A_handle->all_use_buffer()) {
+    if (A_handle->all_use_buffer() && spmv_descr->temp_buffer_size > 0) {
+        // The accessor can only be bound to the cgh if the buffer size is
+        // greater than 0
         auto functor = [=](CusparseScopedContextHandler &sc,
                            sycl::accessor<std::uint8_t> workspace_acc) {
             auto cu_handle = sc.get_handle(queue);
@@ -202,6 +216,8 @@ sycl::event spmv(sycl::queue &queue, oneapi::mkl::transpose opA, const void *alp
                                      workspace_placeholder_acc, x_handle, y_handle);
     }
     else {
+        // The same dispatch_submit can be used for buffers if no workspace
+        // accessor is needed and workspace_ptr will be a nullptr.
         auto workspace_ptr = spmv_descr->workspace.usm_ptr;
         auto functor = [=](CusparseScopedContextHandler &sc) {
             auto cu_handle = sc.get_handle(queue);
