@@ -242,6 +242,13 @@ void prepare_reference_spmm_data(sparse_matrix_format_t format, const intType *i
     // dense_opa is always row major
     auto dense_opa =
         sparse_to_dense(format, ia, ja, a, a_nrows_u, a_ncols_u, nnz, indexing, opA, A_view);
+    std::cout << "dense_opa:\n";
+    for (std::size_t i = 0; i < opa_nrows; ++i) {
+        for (std::size_t j = 0; j < opa_ncols; ++j) {
+            std::cout << dense_opa[i * opa_ncols + j] << " ";
+        }
+        std::cout << "\n";
+    }
 
     std::size_t b_outer_size = static_cast<std::size_t>(opa_ncols);
     std::size_t b_inner_size = c_ncols_u;
@@ -249,6 +256,13 @@ void prepare_reference_spmm_data(sparse_matrix_format_t format, const intType *i
         std::swap(b_outer_size, b_inner_size);
     }
     auto dense_opb = dense_transpose_if_needed(b, b_outer_size, b_inner_size, ldb_u, opB);
+    std::cout << "dense_opb:\n";
+    for (std::size_t i = 0; i < b_outer_size; ++i) {
+        for (std::size_t j = 0; j < b_inner_size; ++j) {
+            std::cout << dense_opb[i * b_outer_size + j] << " ";
+        }
+        std::cout << "\n";
+    }
 
     // Return the linear index to access a dense matrix from
     auto dense_linear_idx = [=](std::size_t row, std::size_t col, std::size_t ld) {
@@ -270,6 +284,13 @@ void prepare_reference_spmm_data(sparse_matrix_format_t format, const intType *i
             fpType &c = c_ref[dense_linear_idx(row, col, ldc_u)];
             c = alpha * acc + beta * c;
         }
+    }
+    std::cout << "c_ref:\n";
+    for (std::size_t i = 0; i < opa_nrows; ++i) {
+        for (std::size_t j = 0; j < c_ncols_u; ++j) {
+            std::cout << c_ref[i * opa_nrows + j] << " ";
+        }
+        std::cout << "\n";
     }
 }
 

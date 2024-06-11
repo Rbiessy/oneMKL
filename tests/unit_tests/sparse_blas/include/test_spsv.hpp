@@ -53,7 +53,8 @@ void test_helper_with_format(testFunctorI32 test_functor_i32, testFunctorI64 tes
                              int &num_skipped) {
     double density_A_matrix = 0.144;
     fpType alpha = set_fp_value<fpType>()(1.f, 0.f);
-    int m = 277;
+    //int m = 277;
+    int m = 5;
     oneapi::mkl::index_base index_zero = oneapi::mkl::index_base::zero;
     oneapi::mkl::sparse::spsv_alg default_alg = oneapi::mkl::sparse::spsv_alg::default_alg;
     oneapi::mkl::sparse::spsv_alg no_optimize_alg = oneapi::mkl::sparse::spsv_alg::no_optimize_alg;
@@ -168,6 +169,20 @@ void prepare_reference_spsv_data(sparse_matrix_format_t format, const intType *i
     auto dense_opa = sparse_to_dense(format, ia, ja, a, mu, mu, static_cast<std::size_t>(nnz),
                                      indexing, opA, A_view);
 
+    std::cout << "dense_opa:\n";
+    for (std::size_t i = 0; i < mu; ++i) {
+        for (std::size_t j = 0; j < mu; ++j) {
+            std::cout << dense_opa[i * mu + j] << " ";
+        }
+        std::cout << "\n";
+    }
+
+    std::cout << "x: ";
+    for (std::size_t i = 0; i < mu; ++i) {
+        std::cout << x[i] << " ";
+    }
+    std::cout << "\n";
+
     //
     // do SPSV operation
     //
@@ -186,6 +201,12 @@ void prepare_reference_spsv_data(sparse_matrix_format_t format, const intType *i
         }
         y_ref[uplo_row] = rhs / dense_opa[uplo_row * mu + uplo_row];
     }
+
+    std::cout << "y_ref: ";
+    for (std::size_t i = 0; i < mu; ++i) {
+        std::cout << y_ref[i] << " ";
+    }
+    std::cout << "\n";
 }
 
 #endif // _TEST_SPSV_HPP__
