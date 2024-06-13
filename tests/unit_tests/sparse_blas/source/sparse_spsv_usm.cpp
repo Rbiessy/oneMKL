@@ -80,7 +80,7 @@ int test_spsv(sycl::device *dev, sparse_matrix_format_t format, intType m, doubl
 
     // Shuffle ordering of column indices/values to test sortedness
     if (!is_sorted) {
-        shuffle_sparse_matrix(format, indexing, ia_host.data(), ja_host.data(), a_host.data(), nnz,
+        shuffle_sparse_matrix(main_queue, format, indexing, ia_host.data(), ja_host.data(), a_host.data(), nnz,
                               mu);
     }
 
@@ -161,7 +161,7 @@ int test_spsv(sycl::device *dev, sparse_matrix_format_t format, intType m, doubl
                 format, m, m, density_A_matrix, indexing, ia_host, ja_host, a_host, is_symmetric,
                 require_diagonal);
             if (!is_sorted) {
-                shuffle_sparse_matrix(format, indexing, ia_host.data(), ja_host.data(),
+                shuffle_sparse_matrix(main_queue, format, indexing, ia_host.data(), ja_host.data(),
                                       a_host.data(), nnz, mu);
             }
             if (reset_nnz > nnz) {
