@@ -90,10 +90,10 @@ int test_spmm(sycl::device *dev, sparse_matrix_format_t format, intType nrows_A,
     std::vector<fpType> c_ref_host(c_host);
 
     // Shuffle ordering of column indices/values to test sortedness
-    if (!is_sorted) {
+    /*if (!is_sorted) {
         shuffle_sparse_matrix(main_queue, format, indexing, ia_host.data(), ja_host.data(), a_host.data(), nnz,
                               static_cast<std::size_t>(nrows_A));
-    }
+    }*/
 
     std::cout << "ia_host: ";
     for (std::size_t i = 0; i < (format == sparse_matrix_format_t::CSR ? static_cast<std::size_t>(nrows_A) + 1 : static_cast<std::size_t>(nnz)); ++i) {

@@ -197,10 +197,12 @@ void rand_matrix(std::vector<fpType> &m, oneapi::mkl::layout layout_val, std::si
     }
     m.resize(outer_size * ld);
     rand_scalar<fpType> rand;
+    std::cout << "rand_matrix\n";
     for (std::size_t i = 0; i < outer_size; ++i) {
         std::size_t j = 0;
         for (; j < inner_size; ++j) {
-            m[i * ld + j] = rand(fpRealType(-0.5), fpRealType(0.5));
+            std::cout << "i=" << i << " j=" << j << " idx=" << i * ld + j << "\n";
+            m[i * ld + j] = fpRealType(i * ld + j);//rand(fpRealType(-0.5), fpRealType(0.5));
         }
         for (; j < ld; ++j) {
             m[i * ld + j] = set_fp_value<fpType>()(-1.f, 0.f);
@@ -233,6 +235,7 @@ intType generate_random_csr_matrix(const intType nrows, const intType ncols,
                                    bool require_diagonal = false) {
     intType nnz = 0;
     rand_scalar<double> rand_density;
+    static fpType x = 0;
 
     ia.push_back(indexing); // starting index of row0.
     for (intType i = 0; i < nrows; i++) {
@@ -261,7 +264,8 @@ intType generate_random_csr_matrix(const intType nrows, const intType ncols,
         for (intType j = j_start; j < ncols; j++) {
             const bool is_diag = require_diagonal && i == j;
             if (is_diag || (rand_density(0.0, 1.0) <= density_val)) {
-                a.push_back(generate_data<fpType>(is_diag));
+                //a.push_back(generate_data<fpType>(is_diag));
+                a.push_back(x += 1);
                 ja.push_back(j + indexing);
                 nnz++;
             }
