@@ -64,8 +64,7 @@ void test_helper_with_format_with_transpose(
     oneapi::mkl::index_base index_zero = oneapi::mkl::index_base::zero;
     oneapi::mkl::layout col_major = oneapi::mkl::layout::col_major;
     int nrows_A = 4, ncols_A = 6, ncols_C = 5;
-    int ldb = transpose_A == oneapi::mkl::transpose::nontrans ? ncols_A : nrows_A;
-    int ldc = transpose_A == oneapi::mkl::transpose::nontrans ? nrows_A : ncols_A;
+    auto [ldc, ldb] = swap_if_transposed(transpose_A, nrows_A, ncols_A);
     oneapi::mkl::sparse::spmm_alg default_alg = oneapi::mkl::sparse::spmm_alg::default_alg;
     oneapi::mkl::sparse::matrix_view default_A_view;
     std::set<oneapi::mkl::sparse::matrix_property> no_properties;
@@ -137,8 +136,7 @@ void test_helper_with_format_with_transpose(
         num_passed, num_skipped);
     // Test int64 indices
     long long_nrows_A = 27, long_ncols_A = 13, long_ncols_C = 6;
-    long long_ldb = transpose_A == oneapi::mkl::transpose::nontrans ? long_ncols_A : long_nrows_A;
-    long long_ldc = transpose_A == oneapi::mkl::transpose::nontrans ? long_nrows_A : long_ncols_A;
+    auto [long_ldc, long_ldb] = swap_if_transposed(transpose_A, long_nrows_A, long_ncols_A);
     EXPECT_TRUE_OR_FUTURE_SKIP(
         test_functor_i64(dev, format, long_nrows_A, long_ncols_A, long_ncols_C, density_A_matrix,
                          index_zero, col_major, transpose_A, transpose_B, fp_one, fp_zero, long_ldb,
@@ -234,8 +232,7 @@ void prepare_reference_spmm_data(sparse_matrix_format_t format, const intType *i
     std::size_t a_nrows_u = static_cast<std::size_t>(a_nrows);
     std::size_t a_ncols_u = static_cast<std::size_t>(a_ncols);
     std::size_t c_ncols_u = static_cast<std::size_t>(c_ncols);
-    std::size_t opa_nrows = (opA == oneapi::mkl::transpose::nontrans) ? a_nrows_u : a_ncols_u;
-    std::size_t opa_ncols = (opA == oneapi::mkl::transpose::nontrans) ? a_ncols_u : a_nrows_u;
+    auto [opa_nrows, opa_ncols] = swap_if_transposed(opA, a_nrows_u, a_ncols_u);
     const std::size_t nnz = static_cast<std::size_t>(a_nnz);
     const std::size_t ldb_u = static_cast<std::size_t>(ldb);
     const std::size_t ldc_u = static_cast<std::size_t>(ldc);

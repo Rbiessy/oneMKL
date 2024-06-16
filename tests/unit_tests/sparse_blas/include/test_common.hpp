@@ -122,6 +122,21 @@ void fill_buffer_to_0(sycl::queue queue, sycl::buffer<T, 1> dst) {
     });
 }
 
+template <typename OutT, typename XT, typename YT>
+std::pair<OutT, OutT> swap_if_transposed(oneapi::mkl::transpose op, XT x, YT y) {
+    if (op == oneapi::mkl::transpose::nontrans) {
+        return { static_cast<OutT>(x), static_cast<OutT>(y) };
+    }
+    else {
+        return { static_cast<OutT>(y), static_cast<OutT>(x) };
+    }
+}
+
+template <typename T>
+auto swap_if_transposed(oneapi::mkl::transpose op, T x, T y) {
+    return swap_if_transposed<T, T, T>(op, x, y);
+}
+
 template <typename fpType>
 struct set_fp_value {
     inline fpType operator()(fpType real, fpType /*imag*/) {
