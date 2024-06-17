@@ -149,8 +149,9 @@ int test_spmm(sycl::device *dev, sparse_matrix_format_t format, intType nrows_A,
         for (auto property : matrix_properties) {
             CALL_RT_OR_CT(oneapi::mkl::sparse::set_matrix_property, main_queue, A_handle, property);
         }
-        CALL_RT_OR_CT(oneapi::mkl::sparse::init_dense_matrix, main_queue, &B_handle, opb_nrows,
-                      opb_ncols, ldb, dense_matrix_layout, b_usm);
+        //CALL_RT_OR_CT(oneapi::mkl::sparse::init_dense_matrix, main_queue, &B_handle, opb_nrows,
+        //              opb_ncols, ldb, dense_matrix_layout, b_usm);
+        CALL_RT_OR_CT(oneapi::mkl::sparse::init_dense_matrix, main_queue, &B_handle, opa_ncols, ncols_C, ldb, dense_matrix_layout, b_usm);
         CALL_RT_OR_CT(oneapi::mkl::sparse::init_dense_matrix, main_queue, &C_handle,
                       static_cast<std::int64_t>(opa_nrows), ncols_C, ldc, dense_matrix_layout,
                       c_usm);
