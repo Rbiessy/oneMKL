@@ -153,7 +153,7 @@ int test_spmm(sycl::device *dev, sparse_matrix_format_t format, intType nrows_A,
         //              opb_ncols, ldb, dense_matrix_layout, b_usm);
         CALL_RT_OR_CT(oneapi::mkl::sparse::init_dense_matrix, main_queue, &B_handle, opa_ncols, ncols_C, ldb, dense_matrix_layout, b_usm);
         CALL_RT_OR_CT(oneapi::mkl::sparse::init_dense_matrix, main_queue, &C_handle,
-                      static_cast<std::int64_t>(opa_nrows), ncols_C, ldc, dense_matrix_layout,
+                      ncols_C, static_cast<std::int64_t>(opa_nrows), ldc, dense_matrix_layout,
                       c_usm);
 
         CALL_RT_OR_CT(oneapi::mkl::sparse::init_spmm_descr, main_queue, &descr);
