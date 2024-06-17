@@ -123,13 +123,23 @@ void fill_buffer_to_0(sycl::queue queue, sycl::buffer<T, 1> dst) {
 }
 
 template <typename OutT, typename XT, typename YT>
-std::pair<OutT, OutT> swap_if_transposed(oneapi::mkl::transpose op, XT x, YT y) {
-    if (op == oneapi::mkl::transpose::nontrans) {
+std::pair<OutT, OutT> swap_cond(bool no_swap, XT x, YT y) {
+    if (no_swap) {
         return { static_cast<OutT>(x), static_cast<OutT>(y) };
     }
     else {
         return { static_cast<OutT>(y), static_cast<OutT>(x) };
     }
+}
+
+template <typename T>
+auto swap_cond(bool no_swap, T x, T y) {
+    return swap_cond<T, T, T>(no_swap, x, y);
+}
+
+template <typename OutT, typename XT, typename YT>
+auto swap_if_transposed(oneapi::mkl::transpose op, XT x, YT y) {
+    return swap_cond<OutT, XT, YT>(op == oneapi::mkl::transpose::nontrans, x, y);
 }
 
 template <typename T>
@@ -180,11 +190,8 @@ template <typename fpType>
 void rand_matrix(std::vector<fpType> &m, oneapi::mkl::layout layout_val, std::size_t nrows,
                  std::size_t ncols, std::size_t ld) {
     using fpRealType = typename complex_info<fpType>::real_type;
-    std::size_t outer_size = nrows;
-    std::size_t inner_size = ncols;
-    if (layout_val == oneapi::mkl::layout::col_major) {
-        std::swap(outer_size, inner_size);
-    }
+    auto [outer_size, inner_size] =
+        swap_cond(layout_val == oneapi::mkl::layout::col_major, ncols, nrows);
     if (inner_size > ld) {
         throw std::runtime_error("Expected inner_size <= ld");
     }

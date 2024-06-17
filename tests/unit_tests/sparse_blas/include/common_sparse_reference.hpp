@@ -131,19 +131,22 @@ auto sparse_transpose_if_needed(const intType *ia, const intType *ja, const fpTy
     return std::make_tuple(iopa, jopa, opa);
 }
 
+/// Reduce the leading dimension to the minimum and transpose the matrix if needed
+/// The outputted matrix uses the same dense layout than the input \p x.
 template <typename fpType>
-auto dense_transpose_if_needed(const fpType *x, std::size_t outer_size, std::size_t inner_size,
-                               std::size_t ld, oneapi::mkl::transpose transpose_val) {
-    std::vector<fpType> opx;
-    if (transpose_val == oneapi::mkl::transpose::nontrans) {
-        opx.assign(x, x + outer_size * ld);
+auto extract_dense_matrix(const fpType *x, std::size_t outer_size, std::size_t inner_size,
+                          std::size_t ld, oneapi::mkl::transpose transpose_val) {
+    if (inner_size > ld) {
+        throw std::runtime_error("Expected inner_size <= ld");
     }
-    else {
-        opx.resize(outer_size * ld);
-        for (std::size_t i = 0; i < outer_size; ++i) {
-            for (std::size_t j = 0; j < inner_size; ++j) {
-                opx[i + j * ld] = x[i * ld + j];
-            }
+
+    std::size_t outer_stride = transpose_val == oneapi::mkl::transpose::nontrans ? inner_size : 1;
+    std::size_t inner_stride = transpose_val == oneapi::mkl::transpose::nontrans ? 1 : outer_size;
+    // Copy with a default leading dimension and transpose if needed
+    std::vector<fpType> opx(outer_size * inner_size);
+    for (std::size_t i = 0; i < outer_size; ++i) {
+        for (std::size_t j = 0; j < inner_size; ++j) {
+            opx[i * outer_stride + j * inner_stride] = x[i * ld + j];
         }
     }
     return opx;

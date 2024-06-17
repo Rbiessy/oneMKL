@@ -247,12 +247,9 @@ void prepare_reference_spmm_data(sparse_matrix_format_t format, const intType *i
         std::cout << "\n";
     }
 
-    std::size_t b_outer_size = static_cast<std::size_t>(opa_ncols);
-    std::size_t b_inner_size = c_ncols_u;
-    if (dense_matrix_layout == oneapi::mkl::layout::col_major) {
-        std::swap(b_outer_size, b_inner_size);
-    }
-    auto dense_opb = dense_transpose_if_needed(b, b_outer_size, b_inner_size, ldb_u, opB);
+    auto [b_outer_size, b_inner_size] =
+        swap_cond(dense_matrix_layout == oneapi::mkl::layout::col_major, c_ncols_u, opa_ncols);
+    auto dense_opb = extract_dense_matrix(b, b_outer_size, b_inner_size, ldb_u, opB);
     std::cout << "dense_opb:\n";
     for (std::size_t i = 0; i < b_outer_size; ++i) {
         for (std::size_t j = 0; j < b_inner_size; ++j) {
@@ -276,7 +273,8 @@ void prepare_reference_spmm_data(sparse_matrix_format_t format, const intType *i
         for (std::size_t col = 0; col < c_ncols_u; col++) {
             fpType acc = 0;
             for (std::size_t i = 0; i < opa_ncols; i++) {
-                acc += dense_opa[row * opa_ncols + i] * dense_opb[dense_linear_idx(i, col, ldb_u)];
+                acc += dense_opa[row * opa_ncols + i] *
+                       dense_opb[dense_linear_idx(i, col, b_inner_size)];
             }
             fpType &c = c_ref[dense_linear_idx(row, col, ldc_u)];
             c = alpha * acc + beta * c;
