@@ -63,8 +63,15 @@ void test_helper_with_format_with_transpose(
     fpType fp_one = set_fp_value<fpType>()(1.f, 0.f);
     oneapi::mkl::index_base index_zero = oneapi::mkl::index_base::zero;
     oneapi::mkl::layout col_major = oneapi::mkl::layout::col_major;
-    int nrows_A = 4, ncols_A = 6, ncols_C = 5;
-    auto [ldc, ldb] = swap_if_transposed(transpose_A, nrows_A, ncols_A);
+    int m = 4, k = 2, n = 5;
+    int     nrows_A     = (transpose_A != oneapi::mkl::transpose::nontrans) ? k : m;
+    int     ncols_A     = (transpose_A != oneapi::mkl::transpose::nontrans) ? m : k;
+    int     nrows_B     = (transpose_B != oneapi::mkl::transpose::nontrans) ? n : k;
+    int     ncols_B     = (transpose_B != oneapi::mkl::transpose::nontrans) ? k : n;
+    int     nrows_C     = m;
+    int     ncols_C     = n;
+    int ldb = nrows_B;
+    int ldc = nrows_C;
     oneapi::mkl::sparse::spmm_alg default_alg = oneapi::mkl::sparse::spmm_alg::default_alg;
     oneapi::mkl::sparse::matrix_view default_A_view;
     std::set<oneapi::mkl::sparse::matrix_property> no_properties;
