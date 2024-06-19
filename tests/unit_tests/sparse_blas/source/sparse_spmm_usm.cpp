@@ -96,7 +96,7 @@ int test_spmm(sycl::device *dev, sparse_matrix_format_t format, intType nrows_A,
     }
 
     std::cout << "ia_host: ";
-    for (std::size_t i = 0; i < static_cast<std::size_t>(nrows_A) + 1; ++i) {
+    for (std::size_t i = 0; i < (format == sparse_matrix_format_t::CSR ? static_cast<std::size_t>(nrows_A) + 1 : static_cast<std::size_t>(nnz)); ++i) {
         std::cout << ia_host[i] << " ";
     }
     std::cout << "\n";
