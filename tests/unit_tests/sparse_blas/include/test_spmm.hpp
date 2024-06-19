@@ -84,7 +84,7 @@ void test_helper_with_format_with_transpose(
                          default_alg, default_A_view, no_properties, no_reset_data),
         num_passed, num_skipped);
     // Reset data
-    /*EXPECT_TRUE_OR_FUTURE_SKIP(
+    EXPECT_TRUE_OR_FUTURE_SKIP(
         test_functor_i32(dev, format, nrows_A, ncols_A, ncols_C, density_A_matrix, index_zero,
                          col_major, transpose_A, transpose_B, fp_one, fp_zero, ldb, ldc,
                          default_alg, default_A_view, no_properties, true),
@@ -164,7 +164,7 @@ void test_helper_with_format_with_transpose(
                              col_major, transpose_A, transpose_B, fp_one, fp_zero, ldb, ldc,
                              default_alg, default_A_view, properties, no_reset_data),
             num_passed, num_skipped);
-    }*/
+    }
 }
 
 /**
@@ -189,7 +189,7 @@ void test_helper_with_format(
     test_helper_with_format_with_transpose<fpType>(
         test_functor_i32, test_functor_i64, dev, format, non_default_algorithms,
         oneapi::mkl::transpose::nontrans, oneapi::mkl::transpose::trans, num_passed, num_skipped);
-    /*std::vector<oneapi::mkl::transpose> transpose_vals{ oneapi::mkl::transpose::nontrans,
+    std::vector<oneapi::mkl::transpose> transpose_vals{ oneapi::mkl::transpose::nontrans,
                                                         oneapi::mkl::transpose::trans };
     if (complex_info<fpType>::is_complex) {
         transpose_vals.push_back(oneapi::mkl::transpose::conjtrans);
@@ -200,7 +200,7 @@ void test_helper_with_format(
                 test_functor_i32, test_functor_i64, dev, format, non_default_algorithms,
                 transpose_A, transpose_B, num_passed, num_skipped);
         }
-    }*/
+    }
 }
 
 /**
@@ -221,12 +221,12 @@ void test_helper(testFunctorI32 test_functor_i32, testFunctorI64 test_functor_i6
         { oneapi::mkl::sparse::spmm_alg::no_optimize_alg, oneapi::mkl::sparse::spmm_alg::csr_alg1,
           oneapi::mkl::sparse::spmm_alg::csr_alg2, oneapi::mkl::sparse::spmm_alg::csr_alg3 },
         num_passed, num_skipped);
-    /*test_helper_with_format<fpType>(
+    test_helper_with_format<fpType>(
         test_functor_i32, test_functor_i64, dev, sparse_matrix_format_t::COO,
         { oneapi::mkl::sparse::spmm_alg::no_optimize_alg, oneapi::mkl::sparse::spmm_alg::coo_alg1,
           oneapi::mkl::sparse::spmm_alg::coo_alg2, oneapi::mkl::sparse::spmm_alg::coo_alg3,
           oneapi::mkl::sparse::spmm_alg::coo_alg4 },
-        num_passed, num_skipped);*/
+        num_passed, num_skipped);
 }
 
 /// Compute spmm reference as a dense operation
@@ -283,13 +283,13 @@ void prepare_reference_spmm_data(sparse_matrix_format_t format, const intType *i
             fpType acc = 0;
             for (std::size_t i = 0; i < opa_ncols; i++) {
                 acc += dense_opa[row * opa_ncols + i] * dense_opb[i * c_ncols_u + col];
-                std::cout << "row=" << row << " col=" << col << " i=" << i << " A["
+                /*std::cout << "row=" << row << " col=" << col << " i=" << i << " A["
                           << row * opa_ncols + i << "]=" << dense_opa[row * opa_ncols + i] << " B["
                           << i * c_ncols_u + col << "]=" << dense_opb[i * c_ncols_u + col]
-                          << " acc=" << acc << "\n";
+                          << " acc=" << acc << "\n";*/
             }
             fpType &c = c_ref[dense_linear_idx(row, col, ldc_u)];
-            std::cout << "C[" << dense_linear_idx(row, col, ldc_u) << "]=" << c_ref[dense_linear_idx(row, col, ldc_u)] << "\n";
+            //std::cout << "C[" << dense_linear_idx(row, col, ldc_u) << "]=" << c_ref[dense_linear_idx(row, col, ldc_u)] << "\n";
             c = alpha * acc + beta * c;
         }
     }

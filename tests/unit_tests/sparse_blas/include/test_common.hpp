@@ -197,12 +197,13 @@ void rand_matrix(std::vector<fpType> &m, oneapi::mkl::layout layout_val, std::si
     }
     m.resize(outer_size * ld);
     rand_scalar<fpType> rand;
-    std::cout << "rand_matrix\n";
+    //std::cout << "rand_matrix\n";
     for (std::size_t i = 0; i < outer_size; ++i) {
         std::size_t j = 0;
         for (; j < inner_size; ++j) {
-            std::cout << "i=" << i << " j=" << j << " idx=" << i * ld + j << "\n";
-            m[i * ld + j] = fpRealType(i * ld + j);//rand(fpRealType(-0.5), fpRealType(0.5));
+            //std::cout << "i=" << i << " j=" << j << " idx=" << i * ld + j << "\n";
+            m[i * ld + j] = rand(fpRealType(-0.5), fpRealType(0.5));
+            //m[i * ld + j] = fpRealType(i * ld + j);
         }
         for (; j < ld; ++j) {
             m[i * ld + j] = set_fp_value<fpType>()(-1.f, 0.f);
