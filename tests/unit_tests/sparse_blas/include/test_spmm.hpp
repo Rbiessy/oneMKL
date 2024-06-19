@@ -257,13 +257,12 @@ void prepare_reference_spmm_data(sparse_matrix_format_t format, const intType *i
         std::cout << "\n";
     }
 
-    auto [b_outer_size, b_inner_size] =
-        swap_cond(dense_matrix_layout == oneapi::mkl::layout::col_major, c_ncols_u, opa_ncols);
-    auto dense_opb = extract_dense_matrix(b, b_outer_size, b_inner_size, ldb_u, opB);
+    // dense_opb is always row major and not transposed
+    auto dense_opb = extract_dense_matrix(b, opa_ncols, c_ncols_u, ldb_u, opB, dense_matrix_layout);
     std::cout << "dense_opb:\n";
-    for (std::size_t i = 0; i < b_outer_size; ++i) {
-        for (std::size_t j = 0; j < b_inner_size; ++j) {
-            std::cout << dense_opb[i * b_inner_size + j] << " ";
+    for (std::size_t i = 0; i < opa_ncols; ++i) {
+        for (std::size_t j = 0; j < c_ncols_u; ++j) {
+            std::cout << dense_opb[i * c_ncols_u + j] << " ";
         }
         std::cout << "\n";
     }
@@ -283,9 +282,11 @@ void prepare_reference_spmm_data(sparse_matrix_format_t format, const intType *i
         for (std::size_t col = 0; col < c_ncols_u; col++) {
             fpType acc = 0;
             for (std::size_t i = 0; i < opa_ncols; i++) {
-                acc += dense_opa[row * opa_ncols + i] *
-                       dense_opb[dense_linear_idx(i, col, b_inner_size)];
-                std::cout << "row=" << row << " col=" << col << " i=" << i << " A[" << row * opa_ncols + i << "]=" << dense_opa[row * opa_ncols + i] << " B[" << dense_linear_idx(i, col, b_inner_size) << "]=" << dense_opb[dense_linear_idx(i, col, b_inner_size)] << " acc=" << acc << "\n";
+                acc += dense_opa[row * opa_ncols + i] * dense_opb[i * c_ncols_u + col];
+                std::cout << "row=" << row << " col=" << col << " i=" << i << " A["
+                          << row * opa_ncols + i << "]=" << dense_opa[row * opa_ncols + i] << " B["
+                          << i * c_ncols_u + col << "]=" << dense_opb[i * c_ncols_u + col]
+                          << " acc=" << acc << "\n";
             }
             fpType &c = c_ref[dense_linear_idx(row, col, ldc_u)];
             std::cout << "C[" << dense_linear_idx(row, col, ldc_u) << "]=" << c_ref[dense_linear_idx(row, col, ldc_u)] << "\n";
