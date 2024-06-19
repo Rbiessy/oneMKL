@@ -27,8 +27,6 @@
 
 namespace oneapi::mkl::sparse::cusparse {
 
-using namespace oneapi::mkl::sparse::detail;
-
 /**
  * In this file CusparseScopedContextHandler are used to ensure that a cusparseHandle_t is created before any other cuSPARSE call, as required by the specification.
 */
@@ -72,7 +70,7 @@ void init_dense_vector(sycl::queue &queue, dense_vector_handle_t *p_dvhandle, st
 template <typename fpType>
 void set_dense_vector_data(sycl::queue &queue, oneapi::mkl::sparse::dense_vector_handle_t dvhandle,
                            std::int64_t size, sycl::buffer<fpType, 1> val) {
-    check_can_reset_value_handle<fpType>(__FUNCTION__, dvhandle, true);
+    detail::check_can_reset_value_handle<fpType>(__FUNCTION__, dvhandle, true);
     auto event = queue.submit([&](sycl::handler &cgh) {
         auto acc = val.template get_access<sycl::access::mode::read_write>(cgh);
         submit_host_task(cgh, queue, [=](CusparseScopedContextHandler &sc) {
@@ -98,7 +96,7 @@ void set_dense_vector_data(sycl::queue &queue, oneapi::mkl::sparse::dense_vector
 template <typename fpType>
 void set_dense_vector_data(sycl::queue &queue, oneapi::mkl::sparse::dense_vector_handle_t dvhandle,
                            std::int64_t size, fpType *val) {
-    check_can_reset_value_handle<fpType>(__FUNCTION__, dvhandle, false);
+    detail::check_can_reset_value_handle<fpType>(__FUNCTION__, dvhandle, false);
     auto event = queue.submit([&](sycl::handler &cgh) {
         submit_host_task(cgh, queue, [=](CusparseScopedContextHandler &sc) {
             // Ensure that a cusparse handle is created before any other cuSPARSE function is called.
@@ -178,7 +176,7 @@ template <typename fpType>
 void set_dense_matrix_data(sycl::queue &queue, oneapi::mkl::sparse::dense_matrix_handle_t dmhandle,
                            std::int64_t num_rows, std::int64_t num_cols, std::int64_t ld,
                            oneapi::mkl::layout dense_layout, sycl::buffer<fpType, 1> val) {
-    check_can_reset_value_handle<fpType>(__FUNCTION__, dmhandle, true);
+    detail::check_can_reset_value_handle<fpType>(__FUNCTION__, dmhandle, true);
     auto event = queue.submit([&](sycl::handler &cgh) {
         auto acc = val.template get_access<sycl::access::mode::read_write>(cgh);
         submit_host_task(cgh, queue, [=](CusparseScopedContextHandler &sc) {
@@ -210,7 +208,7 @@ template <typename fpType>
 void set_dense_matrix_data(sycl::queue &queue, oneapi::mkl::sparse::dense_matrix_handle_t dmhandle,
                            std::int64_t num_rows, std::int64_t num_cols, std::int64_t ld,
                            oneapi::mkl::layout dense_layout, fpType *val) {
-    check_can_reset_value_handle<fpType>(__FUNCTION__, dmhandle, false);
+    detail::check_can_reset_value_handle<fpType>(__FUNCTION__, dmhandle, false);
     auto event = queue.submit([&](sycl::handler &cgh) {
         submit_host_task(cgh, queue, [=](CusparseScopedContextHandler &sc) {
             // Ensure that a cusparse handle is created before any other cuSPARSE function is called.
@@ -305,7 +303,7 @@ void set_coo_matrix_data(sycl::queue &queue, oneapi::mkl::sparse::matrix_handle_
                          std::int64_t num_rows, std::int64_t num_cols, std::int64_t nnz,
                          oneapi::mkl::index_base index, sycl::buffer<intType, 1> row_ind,
                          sycl::buffer<intType, 1> col_ind, sycl::buffer<fpType, 1> val) {
-    check_can_reset_sparse_handle<fpType, intType>(__FUNCTION__, smhandle, true);
+    detail::check_can_reset_sparse_handle<fpType, intType>(__FUNCTION__, smhandle, true);
     auto event = queue.submit([&](sycl::handler &cgh) {
         auto row_acc = row_ind.template get_access<sycl::access::mode::read_write>(cgh);
         auto col_acc = col_ind.template get_access<sycl::access::mode::read_write>(cgh);
@@ -345,7 +343,7 @@ void set_coo_matrix_data(sycl::queue &queue, oneapi::mkl::sparse::matrix_handle_
                          std::int64_t num_rows, std::int64_t num_cols, std::int64_t nnz,
                          oneapi::mkl::index_base index, intType *row_ind, intType *col_ind,
                          fpType *val) {
-    check_can_reset_sparse_handle<fpType, intType>(__FUNCTION__, smhandle, false);
+    detail::check_can_reset_sparse_handle<fpType, intType>(__FUNCTION__, smhandle, false);
     auto event = queue.submit([&](sycl::handler &cgh) {
         submit_host_task(cgh, queue, [=](CusparseScopedContextHandler &sc) {
             // Ensure that a cusparse handle is created before any other cuSPARSE function is called.
@@ -433,7 +431,7 @@ void set_csr_matrix_data(sycl::queue &queue, oneapi::mkl::sparse::matrix_handle_
                          std::int64_t num_rows, std::int64_t num_cols, std::int64_t nnz,
                          oneapi::mkl::index_base index, sycl::buffer<intType, 1> row_ptr,
                          sycl::buffer<intType, 1> col_ind, sycl::buffer<fpType, 1> val) {
-    check_can_reset_sparse_handle<fpType, intType>(__FUNCTION__, smhandle, true);
+    detail::check_can_reset_sparse_handle<fpType, intType>(__FUNCTION__, smhandle, true);
     auto event = queue.submit([&](sycl::handler &cgh) {
         auto row_acc = row_ptr.template get_access<sycl::access::mode::read_write>(cgh);
         auto col_acc = col_ind.template get_access<sycl::access::mode::read_write>(cgh);
@@ -473,7 +471,7 @@ void set_csr_matrix_data(sycl::queue &queue, oneapi::mkl::sparse::matrix_handle_
                          std::int64_t num_rows, std::int64_t num_cols, std::int64_t nnz,
                          oneapi::mkl::index_base index, intType *row_ptr, intType *col_ind,
                          fpType *val) {
-    check_can_reset_sparse_handle<fpType, intType>(__FUNCTION__, smhandle, false);
+    detail::check_can_reset_sparse_handle<fpType, intType>(__FUNCTION__, smhandle, false);
     auto event = queue.submit([&](sycl::handler &cgh) {
         submit_host_task(cgh, queue, [=](CusparseScopedContextHandler &sc) {
             // Ensure that a cusparse handle is created before any other cuSPARSE function is called.

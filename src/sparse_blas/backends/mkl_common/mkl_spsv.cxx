@@ -35,10 +35,10 @@ void check_valid_spsv(const std::string function_name, sycl::queue &queue,
                       oneapi::mkl::sparse::dense_vector_handle_t x_handle,
                       oneapi::mkl::sparse::dense_vector_handle_t y_handle, const void *alpha,
                       oneapi::mkl::sparse::spsv_alg alg) {
-    detail::check_valid_spsv_common(function_name, queue, A_view, A_handle, x_handle, y_handle,
-                                    alpha);
-
     auto internal_A_handle = detail::get_internal_handle(A_handle);
+    detail::check_valid_spsv_common(function_name, queue, A_view, internal_A_handle, x_handle,
+                                    y_handle, alpha);
+
     if (alg == oneapi::mkl::sparse::spsv_alg::no_optimize_alg &&
         !internal_A_handle->has_matrix_property(oneapi::mkl::sparse::matrix_property::sorted)) {
         throw mkl::unimplemented(

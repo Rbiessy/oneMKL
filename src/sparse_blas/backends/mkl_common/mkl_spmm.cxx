@@ -35,8 +35,9 @@ void check_valid_spmm(const std::string function_name, sycl::queue &queue,
                       oneapi::mkl::sparse::dense_matrix_handle_t B_handle,
                       oneapi::mkl::sparse::dense_matrix_handle_t C_handle, const void *alpha,
                       const void *beta) {
-    detail::check_valid_spmm_common(function_name, queue, A_view, A_handle, B_handle, C_handle,
-                                    alpha, beta);
+    auto internal_A_handle = detail::get_internal_handle(A_handle);
+    detail::check_valid_spmm_common(function_name, queue, A_view, internal_A_handle, B_handle,
+                                    C_handle, alpha, beta);
 
 #if BACKEND == gpu
     if (opA == oneapi::mkl::transpose::conjtrans &&

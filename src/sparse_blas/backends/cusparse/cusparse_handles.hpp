@@ -75,21 +75,4 @@ struct matrix_handle : public detail::generic_sparse_handle<cusparseSpMatDescr_t
 
 } // namespace oneapi::mkl::sparse
 
-namespace oneapi::mkl::sparse::detail {
-
-/**
- * Internal matrix_handle type for MKL backends.
- * Here \p matrix_handle_t is the type of the backend's handle.
- * The user-facing incomplete type matrix_handle_t must be kept incomplete.
- * Internally matrix_handle_t is reinterpret_cast as oneapi::mkl::sparse::detail::matrix_handle which holds another matrix_handle_t for the backend handle.
- */
-using matrix_handle = detail::generic_sparse_handle<matrix_handle_t>;
-
-/// Cast to oneMKL's interface handle type
-inline auto get_internal_handle(matrix_handle_t handle) {
-    return reinterpret_cast<matrix_handle*>(handle);
-}
-
-} // namespace oneapi::mkl::sparse::detail
-
 #endif // _ONEMKL_SRC_SPARSE_BLAS_BACKENDS_CUSPARSE_HANDLES_HPP_

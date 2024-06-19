@@ -53,17 +53,17 @@ void check_ptr_is_host_accessible(const std::string &function_name, const std::s
     }
 }
 
-inline void check_valid_spmm_common(const std::string function_name, sycl::queue &queue,
-                                    oneapi::mkl::sparse::matrix_view A_view,
-                                    oneapi::mkl::sparse::matrix_handle_t A_handle,
-                                    oneapi::mkl::sparse::dense_matrix_handle_t B_handle,
-                                    oneapi::mkl::sparse::dense_matrix_handle_t C_handle,
-                                    const void *alpha, const void *beta) {
-    THROW_IF_NULLPTR(function_name, A_handle);
+template <typename InternalSparseMatHandleT>
+void check_valid_spmm_common(const std::string function_name, sycl::queue &queue,
+                             oneapi::mkl::sparse::matrix_view A_view,
+                             InternalSparseMatHandleT internal_A_handle,
+                             oneapi::mkl::sparse::dense_matrix_handle_t B_handle,
+                             oneapi::mkl::sparse::dense_matrix_handle_t C_handle, const void *alpha,
+                             const void *beta) {
+    THROW_IF_NULLPTR(function_name, internal_A_handle);
     THROW_IF_NULLPTR(function_name, B_handle);
     THROW_IF_NULLPTR(function_name, C_handle);
 
-    auto internal_A_handle = detail::get_internal_handle(A_handle);
     detail::check_all_containers_compatible(function_name, internal_A_handle, B_handle, C_handle);
     if (internal_A_handle->all_use_buffer()) {
         check_ptr_is_host_accessible("spmm", "alpha", queue, alpha);
@@ -85,18 +85,17 @@ inline void check_valid_spmm_common(const std::string function_name, sycl::queue
     }
 }
 
-inline void check_valid_spmv_common(const std::string function_name, sycl::queue &queue,
-                                    oneapi::mkl::transpose opA,
-                                    oneapi::mkl::sparse::matrix_view A_view,
-                                    oneapi::mkl::sparse::matrix_handle_t A_handle,
-                                    oneapi::mkl::sparse::dense_vector_handle_t x_handle,
-                                    oneapi::mkl::sparse::dense_vector_handle_t y_handle,
-                                    const void *alpha, const void *beta) {
-    THROW_IF_NULLPTR(function_name, A_handle);
+template <typename InternalSparseMatHandleT>
+void check_valid_spmv_common(const std::string function_name, sycl::queue &queue,
+                             oneapi::mkl::transpose opA, oneapi::mkl::sparse::matrix_view A_view,
+                             InternalSparseMatHandleT internal_A_handle,
+                             oneapi::mkl::sparse::dense_vector_handle_t x_handle,
+                             oneapi::mkl::sparse::dense_vector_handle_t y_handle, const void *alpha,
+                             const void *beta) {
+    THROW_IF_NULLPTR(function_name, internal_A_handle);
     THROW_IF_NULLPTR(function_name, x_handle);
     THROW_IF_NULLPTR(function_name, y_handle);
 
-    auto internal_A_handle = detail::get_internal_handle(A_handle);
     detail::check_all_containers_compatible(function_name, internal_A_handle, x_handle, y_handle);
     if (internal_A_handle->all_use_buffer()) {
         check_ptr_is_host_accessible("spmv", "alpha", queue, alpha);
@@ -123,23 +122,24 @@ inline void check_valid_spmv_common(const std::string function_name, sycl::queue
     }
 }
 
-inline void check_valid_spsv_common(const std::string function_name, sycl::queue &queue,
-                                    oneapi::mkl::sparse::matrix_view A_view,
-                                    oneapi::mkl::sparse::matrix_handle_t A_handle,
-                                    oneapi::mkl::sparse::dense_vector_handle_t x_handle,
-                                    oneapi::mkl::sparse::dense_vector_handle_t y_handle,
-                                    const void *alpha) {
-    THROW_IF_NULLPTR(function_name, A_handle);
+template <typename InternalSparseMatHandleT>
+void check_valid_spsv_common(const std::string function_name, sycl::queue &queue,
+                             oneapi::mkl::sparse::matrix_view A_view,
+                             InternalSparseMatHandleT internal_A_handle,
+                             oneapi::mkl::sparse::dense_vector_handle_t x_handle,
+                             oneapi::mkl::sparse::dense_vector_handle_t y_handle,
+                             const void *alpha) {
+    THROW_IF_NULLPTR(function_name, internal_A_handle);
     THROW_IF_NULLPTR(function_name, x_handle);
     THROW_IF_NULLPTR(function_name, y_handle);
 
-    detail::check_all_containers_compatible(function_name, A_handle, x_handle, y_handle);
+    detail::check_all_containers_compatible(function_name, internal_A_handle, x_handle, y_handle);
     if (A_view.type_view != matrix_descr::triangular) {
         throw mkl::invalid_argument("sparse_blas", function_name,
                                     "Matrix view's type must be `matrix_descr::triangular`.");
     }
 
-    if (A_handle->all_use_buffer()) {
+    if (internal_A_handle->all_use_buffer()) {
         check_ptr_is_host_accessible("spsv", "alpha", queue, alpha);
     }
 }

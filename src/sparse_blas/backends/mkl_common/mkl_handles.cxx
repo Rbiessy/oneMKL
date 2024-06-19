@@ -36,7 +36,7 @@ template <typename fpType>
 void set_dense_vector_data(sycl::queue & /*queue*/,
                            oneapi::mkl::sparse::dense_vector_handle_t dvhandle, std::int64_t size,
                            sycl::buffer<fpType, 1> val) {
-    check_can_reset_value_handle<fpType>(__FUNCTION__, dvhandle, true);
+    detail::check_can_reset_value_handle<fpType>(__FUNCTION__, dvhandle, true);
     dvhandle->size = size;
     dvhandle->set_buffer(val);
 }
@@ -45,7 +45,7 @@ template <typename fpType>
 void set_dense_vector_data(sycl::queue & /*queue*/,
                            oneapi::mkl::sparse::dense_vector_handle_t dvhandle, std::int64_t size,
                            fpType *val) {
-    check_can_reset_value_handle<fpType>(__FUNCTION__, dvhandle, false);
+    detail::check_can_reset_value_handle<fpType>(__FUNCTION__, dvhandle, false);
     dvhandle->size = size;
     dvhandle->set_usm_ptr(val);
 }
@@ -82,7 +82,7 @@ void set_dense_matrix_data(sycl::queue & /*queue*/,
                            oneapi::mkl::sparse::dense_matrix_handle_t dmhandle,
                            std::int64_t num_rows, std::int64_t num_cols, std::int64_t ld,
                            oneapi::mkl::layout dense_layout, sycl::buffer<fpType, 1> val) {
-    check_can_reset_value_handle<fpType>(__FUNCTION__, dmhandle, true);
+    detail::check_can_reset_value_handle<fpType>(__FUNCTION__, dmhandle, true);
     dmhandle->num_rows = num_rows;
     dmhandle->num_cols = num_cols;
     dmhandle->ld = ld;
@@ -95,7 +95,7 @@ void set_dense_matrix_data(sycl::queue & /*queue*/,
                            oneapi::mkl::sparse::dense_matrix_handle_t dmhandle,
                            std::int64_t num_rows, std::int64_t num_cols, std::int64_t ld,
                            oneapi::mkl::layout dense_layout, fpType *val) {
-    check_can_reset_value_handle<fpType>(__FUNCTION__, dmhandle, false);
+    detail::check_can_reset_value_handle<fpType>(__FUNCTION__, dmhandle, false);
     dmhandle->num_rows = num_rows;
     dmhandle->num_cols = num_cols;
     dmhandle->ld = ld;
@@ -152,7 +152,11 @@ void set_coo_matrix_data(sycl::queue &queue, oneapi::mkl::sparse::matrix_handle_
                          oneapi::mkl::index_base index, sycl::buffer<intType, 1> row_ind,
                          sycl::buffer<intType, 1> col_ind, sycl::buffer<fpType, 1> val) {
     auto internal_smhandle = detail::get_internal_handle(smhandle);
-    check_can_reset_sparse_handle<fpType, intType>(__FUNCTION__, internal_smhandle, true);
+    detail::check_can_reset_sparse_handle<fpType, intType>(__FUNCTION__, internal_smhandle, true);
+    internal_smhandle->num_rows = num_rows;
+    internal_smhandle->num_cols = num_cols;
+    internal_smhandle->nnz = nnz;
+    internal_smhandle->index = index;
     internal_smhandle->row_container.set_buffer(row_ind);
     internal_smhandle->col_container.set_buffer(col_ind);
     internal_smhandle->value_container.set_buffer(val);
@@ -171,7 +175,11 @@ void set_coo_matrix_data(sycl::queue &queue, oneapi::mkl::sparse::matrix_handle_
                          oneapi::mkl::index_base index, intType *row_ind, intType *col_ind,
                          fpType *val) {
     auto internal_smhandle = detail::get_internal_handle(smhandle);
-    check_can_reset_sparse_handle<fpType, intType>(__FUNCTION__, internal_smhandle, false);
+    detail::check_can_reset_sparse_handle<fpType, intType>(__FUNCTION__, internal_smhandle, false);
+    internal_smhandle->num_rows = num_rows;
+    internal_smhandle->num_cols = num_cols;
+    internal_smhandle->nnz = nnz;
+    internal_smhandle->index = index;
     internal_smhandle->row_container.set_usm_ptr(row_ind);
     internal_smhandle->col_container.set_usm_ptr(col_ind);
     internal_smhandle->value_container.set_usm_ptr(val);
@@ -186,7 +194,7 @@ FOR_EACH_FP_AND_INT_TYPE(INSTANTIATE_COO_MATRIX_FUNCS);
 // CSR matrix
 template <typename fpType, typename intType>
 void init_csr_matrix(sycl::queue &queue, oneapi::mkl::sparse::matrix_handle_t *p_smhandle,
-                     std::int64_t num_rows, std::int64_t num_cols, std::int64_t /*nnz*/,
+                     std::int64_t num_rows, std::int64_t num_cols, std::int64_t nnz,
                      oneapi::mkl::index_base index, sycl::buffer<intType, 1> row_ptr,
                      sycl::buffer<intType, 1> col_ind, sycl::buffer<fpType, 1> val) {
     oneapi::mkl::sparse::matrix_handle_t mkl_handle;
@@ -205,7 +213,7 @@ void init_csr_matrix(sycl::queue &queue, oneapi::mkl::sparse::matrix_handle_t *p
 
 template <typename fpType, typename intType>
 void init_csr_matrix(sycl::queue &queue, oneapi::mkl::sparse::matrix_handle_t *p_smhandle,
-                     std::int64_t num_rows, std::int64_t num_cols, std::int64_t /*nnz*/,
+                     std::int64_t num_rows, std::int64_t num_cols, std::int64_t nnz,
                      oneapi::mkl::index_base index, intType *row_ptr, intType *col_ind,
                      fpType *val) {
     oneapi::mkl::sparse::matrix_handle_t mkl_handle;
@@ -222,11 +230,15 @@ void init_csr_matrix(sycl::queue &queue, oneapi::mkl::sparse::matrix_handle_t *p
 
 template <typename fpType, typename intType>
 void set_csr_matrix_data(sycl::queue &queue, oneapi::mkl::sparse::matrix_handle_t smhandle,
-                         std::int64_t num_rows, std::int64_t num_cols, std::int64_t /*nnz*/,
+                         std::int64_t num_rows, std::int64_t num_cols, std::int64_t nnz,
                          oneapi::mkl::index_base index, sycl::buffer<intType, 1> row_ptr,
                          sycl::buffer<intType, 1> col_ind, sycl::buffer<fpType, 1> val) {
     auto internal_smhandle = detail::get_internal_handle(smhandle);
-    check_can_reset_sparse_handle<fpType, intType>(__FUNCTION__, internal_smhandle, true);
+    detail::check_can_reset_sparse_handle<fpType, intType>(__FUNCTION__, internal_smhandle, true);
+    internal_smhandle->num_rows = num_rows;
+    internal_smhandle->num_cols = num_cols;
+    internal_smhandle->nnz = nnz;
+    internal_smhandle->index = index;
     internal_smhandle->row_container.set_buffer(row_ptr);
     internal_smhandle->col_container.set_buffer(col_ind);
     internal_smhandle->value_container.set_buffer(val);
@@ -242,11 +254,15 @@ void set_csr_matrix_data(sycl::queue &queue, oneapi::mkl::sparse::matrix_handle_
 
 template <typename fpType, typename intType>
 void set_csr_matrix_data(sycl::queue &queue, oneapi::mkl::sparse::matrix_handle_t smhandle,
-                         std::int64_t num_rows, std::int64_t num_cols, std::int64_t /*nnz*/,
+                         std::int64_t num_rows, std::int64_t num_cols, std::int64_t nnz,
                          oneapi::mkl::index_base index, intType *row_ptr, intType *col_ind,
                          fpType *val) {
     auto internal_smhandle = detail::get_internal_handle(smhandle);
-    check_can_reset_sparse_handle<fpType, intType>(__FUNCTION__, internal_smhandle, false);
+    detail::check_can_reset_sparse_handle<fpType, intType>(__FUNCTION__, internal_smhandle, false);
+    internal_smhandle->num_rows = num_rows;
+    internal_smhandle->num_cols = num_cols;
+    internal_smhandle->nnz = nnz;
+    internal_smhandle->index = index;
     internal_smhandle->row_container.set_usm_ptr(row_ptr);
     internal_smhandle->col_container.set_usm_ptr(col_ind);
     internal_smhandle->value_container.set_usm_ptr(val);
@@ -266,7 +282,7 @@ sycl::event release_sparse_matrix(sycl::queue &queue, oneapi::mkl::sparse::matri
     // Asynchronously release the backend's handle followed by the internal handle.
     auto event = oneapi::mkl::sparse::release_matrix_handle(
         queue, &internal_smhandle->backend_handle, dependencies);
-    return detail::submit_release(queue, internal_smhandle, event);
+    return detail::submit_release(queue, internal_smhandle, { event });
 }
 
 bool set_matrix_property(sycl::queue & /*queue*/, oneapi::mkl::sparse::matrix_handle_t smhandle,
