@@ -84,7 +84,7 @@ int test_spmm(sycl::device *dev, sparse_matrix_format_t format, intType nrows_A,
     // Input and output dense vectors
     std::vector<fpType> b_host, c_host;
     rand_matrix(b_host, dense_matrix_layout, opa_ncols, static_cast<std::size_t>(ncols_C),
-                static_cast<std::size_t>(ldb));
+                static_cast<std::size_t>(ldb), transpose_B);
     rand_matrix(c_host, dense_matrix_layout, opa_nrows, static_cast<std::size_t>(ncols_C),
                 static_cast<std::size_t>(ldc));
     std::vector<fpType> c_ref_host(c_host);

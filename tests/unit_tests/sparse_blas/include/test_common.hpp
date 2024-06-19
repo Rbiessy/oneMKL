@@ -188,10 +188,10 @@ void rand_vector(std::vector<fpType> &v, std::size_t n) {
 
 template <typename fpType>
 void rand_matrix(std::vector<fpType> &m, oneapi::mkl::layout layout_val, std::size_t nrows,
-                 std::size_t ncols, std::size_t ld) {
+                 std::size_t ncols, std::size_t ld, oneapi::mkl::transpose transpose_val = oneapi::mkl::transpose::nontrans) {
     using fpRealType = typename complex_info<fpType>::real_type;
-    auto [outer_size, inner_size] =
-        swap_cond(layout_val == oneapi::mkl::layout::col_major, ncols, nrows);
+    auto [op_nrows, op_cols] = swap_if_transposed(transpose_val, nrows, ncols);
+    auto [outer_size, inner_size] = swap_cond(layout_val == oneapi::mkl::layout::col_major, op_cols, op_nrows);
     if (inner_size > ld) {
         throw std::runtime_error("Expected inner_size <= ld");
     }
