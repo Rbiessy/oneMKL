@@ -79,7 +79,13 @@ inline void check_status(cusparseStatus_t status, const std::string& function,
             error_str += "; ";
         }
         error_str += "cuSPARSE status: " + cusparse_status_to_str(status);
-        throw oneapi::mkl::exception("sparse_blas", function, error_str);
+        switch (status) {
+            case CUSPARSE_STATUS_NOT_SUPPORTED:
+                throw oneapi::mkl::unimplemented("sparse_blas", function, error_str);
+            case CUSPARSE_STATUS_INVALID_VALUE:
+                throw oneapi::mkl::invalid_argument("sparse_blas", function, error_str);
+            default: throw oneapi::mkl::exception("sparse_blas", function, error_str);
+        }
     }
 }
 

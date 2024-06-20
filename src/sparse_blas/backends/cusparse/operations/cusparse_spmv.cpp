@@ -68,8 +68,8 @@ void check_valid_spmv(const std::string function_name, sycl::queue &queue,
                                     alpha, beta);
     if (A_view.type_view != oneapi::mkl::sparse::matrix_descr::general) {
         throw mkl::unimplemented(
-            "sparse_blas/cusparse", function_name,
-            "spmv does not support a `type_view` other than `matrix_descr::general`.");
+            "sparse_blas", function_name,
+            "The backend does not support spmv with a `type_view` other than `matrix_descr::general`.");
     }
 }
 
