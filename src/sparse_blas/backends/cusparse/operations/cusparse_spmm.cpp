@@ -85,6 +85,7 @@ void spmm_buffer_size(sycl::queue& queue, oneapi::mkl::transpose opA, oneapi::mk
     };
     auto event = dispatch_submit(__FUNCTION__, queue, functor, A_handle, B_handle, C_handle);
     event.wait_and_throw();
+    std::cout << "temp_buffer_size=" << temp_buffer_size << std::endl;
 }
 
 void spmm_optimize_impl(cusparseHandle_t cu_handle, oneapi::mkl::transpose opA,

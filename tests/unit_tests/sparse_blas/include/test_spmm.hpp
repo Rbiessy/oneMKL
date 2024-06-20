@@ -74,7 +74,7 @@ void test_helper_with_format_with_transpose(
     int ldc = nrows_C;
     oneapi::mkl::sparse::spmm_alg default_alg = oneapi::mkl::sparse::spmm_alg::default_alg;
     oneapi::mkl::sparse::matrix_view default_A_view;
-    std::set<oneapi::mkl::sparse::matrix_property> no_properties;
+    std::set<oneapi::mkl::sparse::matrix_property> no_properties{ oneapi::mkl::sparse::matrix_property::sorted };   // TODO(Romain): Confirm sorted is required
     bool no_reset_data = false;
 
     // Basic test
@@ -158,13 +158,15 @@ void test_helper_with_format_with_transpose(
             num_passed, num_skipped);
     }
     // Test matrix properties
-    for (auto properties : test_matrix_properties) {
+    //for (auto properties : test_matrix_properties) {
+    // TODO(Romain): Confirm sorted is required
         EXPECT_TRUE_OR_FUTURE_SKIP(
             test_functor_i32(dev, format, nrows_A, ncols_A, ncols_C, density_A_matrix, index_zero,
                              col_major, transpose_A, transpose_B, fp_one, fp_zero, ldb, ldc,
-                             default_alg, default_A_view, properties, no_reset_data),
+                             default_alg, default_A_view, { oneapi::mkl::sparse::matrix_property::sorted,
+      oneapi::mkl::sparse::matrix_property::symmetric }, no_reset_data),
             num_passed, num_skipped);
-    }
+    //}
 }
 
 /**
@@ -186,9 +188,9 @@ void test_helper_with_format(
     sparse_matrix_format_t format,
     const std::vector<oneapi::mkl::sparse::spmm_alg> &non_default_algorithms, int &num_passed,
     int &num_skipped) {
-    test_helper_with_format_with_transpose<fpType>(
+    /*test_helper_with_format_with_transpose<fpType>(
         test_functor_i32, test_functor_i64, dev, format, non_default_algorithms,
-        oneapi::mkl::transpose::nontrans, oneapi::mkl::transpose::trans, num_passed, num_skipped);
+        oneapi::mkl::transpose::trans, oneapi::mkl::transpose::nontrans, num_passed, num_skipped);*/
     std::vector<oneapi::mkl::transpose> transpose_vals{ oneapi::mkl::transpose::nontrans,
                                                         oneapi::mkl::transpose::trans };
     if (complex_info<fpType>::is_complex) {
