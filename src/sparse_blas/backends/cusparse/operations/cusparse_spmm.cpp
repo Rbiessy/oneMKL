@@ -119,7 +119,8 @@ void spmm_optimize(sycl::queue& queue, oneapi::mkl::transpose opA, oneapi::mkl::
     }
     // Copy the buffer to extend its lifetime until the descriptor is free'd.
     spmm_descr->workspace.set_buffer_untyped(workspace);
-    if (alg == oneapi::mkl::sparse::spmm_alg::no_optimize_alg) {
+    if (alg == oneapi::mkl::sparse::spmm_alg::no_optimize_alg || workspace.size() == 0) {
+        // cusparseSpMM_preprocess cannot be called if the workspace is empty
         return;
     }
     auto functor = [=](CusparseScopedContextHandler& sc,
@@ -151,7 +152,8 @@ sycl::event spmm_optimize(sycl::queue& queue, oneapi::mkl::transpose opA,
         detail::throw_incompatible_container(__FUNCTION__);
     }
     spmm_descr->workspace.usm_ptr = workspace;
-    if (alg == oneapi::mkl::sparse::spmm_alg::no_optimize_alg) {
+    if (alg == oneapi::mkl::sparse::spmm_alg::no_optimize_alg || workspace == nullptr) {
+        // cusparseSpMM_preprocess cannot be called if the workspace is empty
         return detail::collapse_dependencies(queue, dependencies);
     }
     auto functor = [=](CusparseScopedContextHandler& sc) {
