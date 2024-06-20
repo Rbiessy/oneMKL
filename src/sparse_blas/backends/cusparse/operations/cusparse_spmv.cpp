@@ -216,8 +216,9 @@ sycl::event spmv(sycl::queue &queue, oneapi::mkl::transpose opA, const void *alp
                                      workspace_placeholder_acc, x_handle, y_handle);
     }
     else {
-        // The same dispatch_submit can be used for buffers if no workspace
-        // accessor is needed and workspace_ptr will be a nullptr.
+        // The same dispatch_submit can be used for USM or buffers if no
+        // workspace accessor is needed, workspace_ptr will be a nullptr in the
+        // latter case.
         auto workspace_ptr = spmv_descr->workspace.usm_ptr;
         auto functor = [=](CusparseScopedContextHandler &sc) {
             auto cu_handle = sc.get_handle(queue);

@@ -32,6 +32,7 @@ namespace oneapi::mkl::sparse {
 // Complete the definition of the incomplete type
 struct spmm_descr {
     detail::generic_container workspace;
+    std::size_t temp_buffer_size = 0;
 };
 
 } // namespace oneapi::mkl::sparse
@@ -66,7 +67,7 @@ void spmm_buffer_size(sycl::queue& queue, oneapi::mkl::transpose opA, oneapi::mk
                       oneapi::mkl::sparse::dense_matrix_handle_t B_handle, const void* beta,
                       oneapi::mkl::sparse::dense_matrix_handle_t C_handle,
                       oneapi::mkl::sparse::spmm_alg alg,
-                      oneapi::mkl::sparse::spmm_descr_t /*spmm_descr*/,
+                      oneapi::mkl::sparse::spmm_descr_t spmm_descr,
                       std::size_t& temp_buffer_size) {
     detail::check_valid_spmm_common(__FUNCTION__, queue, A_view, A_handle, B_handle, C_handle,
                                     alpha, beta);
@@ -85,6 +86,7 @@ void spmm_buffer_size(sycl::queue& queue, oneapi::mkl::transpose opA, oneapi::mk
     };
     auto event = dispatch_submit(__FUNCTION__, queue, functor, A_handle, B_handle, C_handle);
     event.wait_and_throw();
+    spmm_descr->temp_buffer_size = temp_buffer_size;
     std::cout << "temp_buffer_size=" << temp_buffer_size << std::endl;
 }
 
@@ -179,7 +181,9 @@ sycl::event spmm(sycl::queue& queue, oneapi::mkl::transpose opA, oneapi::mkl::tr
     if (A_handle->all_use_buffer() != spmm_descr->workspace.use_buffer()) {
         detail::throw_incompatible_container(__FUNCTION__);
     }
-    if (A_handle->all_use_buffer()) {
+    if (A_handle->all_use_buffer() && spmm_descr->temp_buffer_size > 0) {
+        // The accessor can only be bound to the cgh if the buffer size is
+        // greater than 0
         auto functor = [=](CusparseScopedContextHandler& sc,
                            sycl::accessor<std::uint8_t> workspace_acc) {
             auto cu_handle = sc.get_handle(queue);
@@ -201,6 +205,9 @@ sycl::event spmm(sycl::queue& queue, oneapi::mkl::transpose opA, oneapi::mkl::tr
                                      workspace_placeholder_acc, B_handle, C_handle);
     }
     else {
+        // The same dispatch_submit can be used for USM or buffers if no
+        // workspace accessor is needed, workspace_ptr will be a nullptr in the
+        // latter case.
         auto workspace_ptr = spmm_descr->workspace.usm_ptr;
         auto functor = [=](CusparseScopedContextHandler& sc) {
             auto cu_handle = sc.get_handle(queue);
