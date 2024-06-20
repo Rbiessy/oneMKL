@@ -367,8 +367,8 @@ void check_can_reset_sparse_handle(const std::string& function_name,
     }
     if (!internal_smhandle->can_be_reset) {
         throw mkl::unimplemented(
-            "sparse_blas/mkl", function_name,
-            "Reseting the matrix handle's data after it was used in a computation is not supported.");
+            "sparse_blas", function_name,
+            "The backend does not support reseting the matrix handle's data after it was used in a computation.");
     }
 }
 
