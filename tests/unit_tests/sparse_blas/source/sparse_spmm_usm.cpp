@@ -71,6 +71,7 @@ int test_spmm(sycl::device *dev, sparse_matrix_format_t format, intType nrows_A,
     std::cout << " alg=" << (int)alg;
     std::cout << " A_view=" << (int)A_view.type_view << " " << (int)A_view.uplo_view << " " << (int)A_view.diag_view;
     std::cout << " is_sorted=" << (int)is_sorted << " is_symmetric=" << (int)is_symmetric;
+    std::cout << " reset_data=" << reset_data;
     std::cout << std::endl;
 #pragma clang diagnostic pop
 
@@ -80,6 +81,7 @@ int test_spmm(sycl::device *dev, sparse_matrix_format_t format, intType nrows_A,
     intType nnz =
         generate_random_matrix<fpType, intType>(format, nrows_A, ncols_A, density_A_matrix,
                                                 indexing, ia_host, ja_host, a_host, is_symmetric);
+    std::cout << "nnz=" << nnz << std::endl;
 
     // Input and output dense vectors
     std::vector<fpType> b_host, c_host;
@@ -248,6 +250,23 @@ int test_spmm(sycl::device *dev, sparse_matrix_format_t format, intType nrows_A,
                   { ev_spmm });
     ev_release_descr.wait_and_throw();
     free_handles(main_queue, { ev_spmm }, A_handle, B_handle, C_handle);
+    
+    std::cout << "AFTER COMPUTE: nnz=" << nnz << "\n";
+    std::cout << "ia_host2: ";
+    for (std::size_t i = 0; i < (format == sparse_matrix_format_t::CSR ? static_cast<std::size_t>(nrows_A) + 1 : static_cast<std::size_t>(nnz)); ++i) {
+        std::cout << ia_host[i] << " ";
+    }
+    std::cout << "\n";
+    std::cout << "ja_host2: ";
+    for (std::size_t i = 0; i < static_cast<std::size_t>(nnz); ++i) {
+        std::cout << ja_host[i] << " ";
+    }
+    std::cout << "\n";
+    std::cout << "a_host2: ";
+    for (std::size_t i = 0; i < static_cast<std::size_t>(nnz); ++i) {
+        std::cout << a_host[i] << " ";
+    }
+    std::cout << "\n";
 
     // Compute reference.
     prepare_reference_spmm_data(format, ia_host.data(), ja_host.data(), a_host.data(), nrows_A,

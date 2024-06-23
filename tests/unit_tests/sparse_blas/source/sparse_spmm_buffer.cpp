@@ -92,6 +92,7 @@ int test_spmm(sycl::device *dev, sparse_matrix_format_t format, intType nrows_A,
     std::cout << " alg=" << (int)alg;
     std::cout << " A_view=" << (int)A_view.type_view << " " << (int)A_view.uplo_view << " " << (int)A_view.diag_view;
     std::cout << " is_sorted=" << (int)is_sorted << " is_symmetric=" << (int)is_symmetric;
+    std::cout << " nnz=" << nnz;
     std::cout << std::endl;
 #pragma clang diagnostic pop
 
