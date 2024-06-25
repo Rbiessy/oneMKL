@@ -35,7 +35,7 @@ namespace oneapi::mkl::sparse::detail {
 
 /// Return whether a pointer is accessible on the host
 template <typename T>
-inline bool is_ptr_accessible_on_host(sycl::queue &queue, const T *host_or_device_ptr) {
+inline bool is_ptr_accessible_on_host(sycl::queue queue, const T *host_or_device_ptr) {
     auto alloc_type = sycl::get_pointer_type(host_or_device_ptr, queue.get_context());
     // Note sycl::usm::alloc::host may not be accessible on the host according to SYCL specification.
     // sycl::usm::alloc::unknown is returned if the pointer is not a USM allocation which is assumed to be a normal host pointer.
@@ -45,7 +45,7 @@ inline bool is_ptr_accessible_on_host(sycl::queue &queue, const T *host_or_devic
 /// Throw an exception if the scalar is not accessible in the host
 template <typename T>
 void check_ptr_is_host_accessible(const std::string &function_name, const std::string &scalar_name,
-                                  sycl::queue &queue, const T *host_or_device_ptr) {
+                                  sycl::queue queue, const T *host_or_device_ptr) {
     if (!is_ptr_accessible_on_host(queue, host_or_device_ptr)) {
         throw mkl::invalid_argument(
             "sparse_blas", function_name,
