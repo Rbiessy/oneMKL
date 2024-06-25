@@ -202,8 +202,8 @@ void rand_matrix(std::vector<fpType> &m, oneapi::mkl::layout layout_val, std::si
         std::size_t j = 0;
         for (; j < inner_size; ++j) {
             //std::cout << "i=" << i << " j=" << j << " idx=" << i * ld + j << "\n";
-            //m[i * ld + j] = rand(fpRealType(-0.5), fpRealType(0.5));
-            m[i * ld + j] = fpRealType(i * ld + j);
+            m[i * ld + j] = rand(fpRealType(-0.5), fpRealType(0.5));
+            //m[i * ld + j] = fpRealType(i * ld + j);
         }
         for (; j < ld; ++j) {
             m[i * ld + j] = set_fp_value<fpType>()(-1.f, 0.f);
@@ -266,8 +266,8 @@ intType generate_random_csr_matrix(const intType nrows, const intType ncols,
             const bool is_diag = require_diagonal && i == j;
             const bool force_last_nnz = nnz == 0 && i == nrows - 1 && j == ncols - 1;
             if (force_last_nnz || is_diag || (rand_density(0.0, 1.0) <= density_val)) {
-                //a.push_back(generate_data<fpType>(is_diag));
-                a.push_back(x += 1);
+                a.push_back(generate_data<fpType>(is_diag));
+                //a.push_back(x += 1);
                 ja.push_back(j + indexing);
                 nnz++;
             }
@@ -313,8 +313,8 @@ intType generate_random_coo_matrix(const intType nrows, const intType ncols,
             const bool is_diag = require_diagonal && i == j;
             const bool force_last_nnz = a.size() == 0 && i == nrows - 1 && j == ncols - 1;
             if (force_last_nnz || is_diag || (rand_density(0.0, 1.0) <= density_val)) {
-                //a.push_back(generate_data<fpType>(is_diag));
-                a.push_back(x += 1);
+                a.push_back(generate_data<fpType>(is_diag));
+                //a.push_back(x += 1);
                 ia.push_back(i + indexing);
                 ja.push_back(j + indexing);
             }
