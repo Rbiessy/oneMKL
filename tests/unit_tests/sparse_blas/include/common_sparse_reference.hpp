@@ -140,10 +140,11 @@ auto extract_dense_matrix(const fpType *x, std::size_t nrows, std::size_t ncols,
     const bool is_row_major = dense_matrix_layout == oneapi::mkl::layout::row_major;
     const bool is_transposed = transpose_val != oneapi::mkl::transpose::nontrans;
     const bool apply_conjugate = transpose_val == oneapi::mkl::transpose::conjtrans;
-    if (is_row_major && ncols > ld) {
+    const bool swap_ld = is_row_major != is_transposed;
+    if (swap_ld && ncols > ld) {
         throw std::runtime_error("Expected ncols <= ld");
     }
-    if (!is_row_major && nrows > ld) {
+    if (!swap_ld && nrows > ld) {
         throw std::runtime_error("Expected nrows <= ld");
     }
 
@@ -151,7 +152,7 @@ auto extract_dense_matrix(const fpType *x, std::size_t nrows, std::size_t ncols,
     std::vector<fpType> opx(nrows * ncols);
     for (std::size_t i = 0; i < nrows; ++i) {
         for (std::size_t j = 0; j < ncols; ++j) {
-            auto val = (is_row_major != is_transposed) ? x[i * ld + j] : x[j * ld + i];
+            auto val = swap_ld ? x[i * ld + j] : x[j * ld + i];
             opx[i * ncols + j] = opVal(val, apply_conjugate);
         }
     }
