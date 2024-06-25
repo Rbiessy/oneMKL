@@ -36,11 +36,11 @@ thread_local cusparse_global_handle<pi_context> CusparseScopedContextHandler::ha
     cusparse_global_handle<pi_context>{};
 
 CusparseScopedContextHandler::CusparseScopedContextHandler(sycl::queue queue,
-                                                           sycl::interop_handle *ih)
+                                                           sycl::interop_handle &ih)
         : ih(ih),
           needToRecover_(false) {
     placedContext_ = new sycl::context(queue.get_context());
-    auto cudaDevice = ih->get_native_device<sycl::backend::ext_oneapi_cuda>();
+    auto cudaDevice = ih.get_native_device<sycl::backend::ext_oneapi_cuda>();
     CUcontext desired;
     CUDA_ERROR_FUNC(cuCtxGetCurrent, &original_);
     CUDA_ERROR_FUNC(cuDevicePrimaryCtxRetain, &desired, cudaDevice);
@@ -83,7 +83,7 @@ void ContextCallback(void *userData) {
 }
 
 cusparseHandle_t CusparseScopedContextHandler::get_handle(const sycl::queue &queue) {
-    auto cudaDevice = ih->get_native_device<sycl::backend::ext_oneapi_cuda>();
+    auto cudaDevice = ih.get_native_device<sycl::backend::ext_oneapi_cuda>();
     CUcontext desired;
     CUDA_ERROR_FUNC(cuDevicePrimaryCtxRetain, &desired, cudaDevice);
     auto piPlacedContext_ = reinterpret_cast<pi_context>(desired);

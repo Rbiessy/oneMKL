@@ -39,11 +39,7 @@ struct spsv_descr {
 
 namespace oneapi::mkl::sparse::cusparse {
 
-void init_spsv_descr(sycl::queue &queue, spsv_descr_t *p_spsv_descr) {
-    // Ensure that a cusparse handle is created before any other cuSPARSE function is called.
-    CusparseScopedContextHandler sc(queue);
-    sc.get_handle(queue);
-
+void init_spsv_descr(sycl::queue &/*queue*/, spsv_descr_t *p_spsv_descr) {
     *p_spsv_descr = new spsv_descr();
     CUSPARSE_ERR_FUNC(cusparseSpSV_createDescr, &(*p_spsv_descr)->cu_descr);
 }

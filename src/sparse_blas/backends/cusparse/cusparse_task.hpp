@@ -68,7 +68,7 @@ void submit_host_task(sycl::handler &cgh, sycl::queue &queue, Functor functor,
     cgh.host_task([functor, queue, capture_only_accessors...](sycl::interop_handle ih) {
         auto unused = std::make_tuple(capture_only_accessors...);
         (void)unused;
-        auto sc = CusparseScopedContextHandler(queue, &ih);
+        auto sc = CusparseScopedContextHandler(queue, ih);
         functor(sc);
     });
 }
@@ -84,7 +84,7 @@ void submit_host_task_with_acc(sycl::handler &cgh, sycl::queue &queue, Functor f
                    capture_only_accessors...](sycl::interop_handle ih) {
         auto unused = std::make_tuple(capture_only_accessors...);
         (void)unused;
-        auto sc = CusparseScopedContextHandler(queue, &ih);
+        auto sc = CusparseScopedContextHandler(queue, ih);
         functor(sc, workspace_placeholder_acc);
     });
 }
