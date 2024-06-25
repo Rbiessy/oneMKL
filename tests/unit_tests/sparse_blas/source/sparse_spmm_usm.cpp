@@ -53,35 +53,12 @@ int test_spmm(sycl::device *dev, sparse_matrix_format_t format, intType nrows_A,
         matrix_properties.find(oneapi::mkl::sparse::matrix_property::symmetric) !=
         matrix_properties.cend();
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Weverything"
-    std::cout << "Running spmm";
-    std::cout << " format=" << (int)format;
-    std::cout << " nrows_A=" << nrows_A;
-    std::cout << " ncols_A=" << ncols_A;
-    std::cout << " ncols_C=" << ncols_C;
-    std::cout << " index=" << (int)index;
-    std::cout << " dense_matrix_layout=" << (int)dense_matrix_layout;
-    std::cout << " transpose_A=" << (int)transpose_A;
-    std::cout << " transpose_B=" << (int)transpose_B;
-    std::cout << " alpha=" << alpha;
-    std::cout << " beta=" << beta;
-    std::cout << " ldb=" << ldb;
-    std::cout << " ldc=" << ldc;
-    std::cout << " alg=" << (int)alg;
-    std::cout << " A_view=" << (int)A_view.type_view << " " << (int)A_view.uplo_view << " " << (int)A_view.diag_view;
-    std::cout << " is_sorted=" << (int)is_sorted << " is_symmetric=" << (int)is_symmetric;
-    std::cout << " reset_data=" << reset_data;
-    std::cout << std::endl;
-#pragma clang diagnostic pop
-
     // Input matrix
     std::vector<intType> ia_host, ja_host;
     std::vector<fpType> a_host;
     intType nnz =
         generate_random_matrix<fpType, intType>(format, nrows_A, ncols_A, density_A_matrix,
                                                 indexing, ia_host, ja_host, a_host, is_symmetric);
-    std::cout << "nnz=" << nnz << std::endl;
 
     // Input and output dense vectors
     std::vector<fpType> b_host, c_host;
@@ -92,26 +69,10 @@ int test_spmm(sycl::device *dev, sparse_matrix_format_t format, intType nrows_A,
     std::vector<fpType> c_ref_host(c_host);
 
     // Shuffle ordering of column indices/values to test sortedness
-    /*if (!is_sorted) {
+    if (!is_sorted) {
         shuffle_sparse_matrix(main_queue, format, indexing, ia_host.data(), ja_host.data(), a_host.data(), nnz,
                               static_cast<std::size_t>(nrows_A));
-    }*/
-
-    std::cout << "ia_host: ";
-    for (std::size_t i = 0; i < (format == sparse_matrix_format_t::CSR ? static_cast<std::size_t>(nrows_A) + 1 : static_cast<std::size_t>(nnz)); ++i) {
-        std::cout << ia_host[i] << " ";
     }
-    std::cout << "\n";
-    std::cout << "ja_host: ";
-    for (std::size_t i = 0; i < static_cast<std::size_t>(nnz); ++i) {
-        std::cout << ja_host[i] << " ";
-    }
-    std::cout << "\n";
-    std::cout << "a_host: ";
-    for (std::size_t i = 0; i < static_cast<std::size_t>(nnz); ++i) {
-        std::cout << a_host[i] << " ";
-    }
-    std::cout << "\n";
 
     auto ia_usm_uptr = malloc_device_uptr<intType>(main_queue, ia_host.size());
     auto ja_usm_uptr = malloc_device_uptr<intType>(main_queue, ja_host.size());
@@ -153,7 +114,6 @@ int test_spmm(sycl::device *dev, sparse_matrix_format_t format, intType nrows_A,
         }
         CALL_RT_OR_CT(oneapi::mkl::sparse::init_dense_matrix, main_queue, &B_handle, opb_nrows,
                       opb_ncols, ldb, dense_matrix_layout, b_usm);
-        //CALL_RT_OR_CT(oneapi::mkl::sparse::init_dense_matrix, main_queue, &B_handle, opa_ncols, ncols_C, ldb, dense_matrix_layout, b_usm);
         CALL_RT_OR_CT(oneapi::mkl::sparse::init_dense_matrix, main_queue, &C_handle,
                       static_cast<std::int64_t>(opa_nrows), ncols_C, ldc, dense_matrix_layout,
                       c_usm);
@@ -250,23 +210,6 @@ int test_spmm(sycl::device *dev, sparse_matrix_format_t format, intType nrows_A,
                   { ev_spmm });
     ev_release_descr.wait_and_throw();
     free_handles(main_queue, { ev_spmm }, A_handle, B_handle, C_handle);
-    
-    std::cout << "AFTER COMPUTE: nnz=" << nnz << "\n";
-    std::cout << "ia_host2: ";
-    for (std::size_t i = 0; i < (format == sparse_matrix_format_t::CSR ? static_cast<std::size_t>(nrows_A) + 1 : static_cast<std::size_t>(nnz)); ++i) {
-        std::cout << ia_host[i] << " ";
-    }
-    std::cout << "\n";
-    std::cout << "ja_host2: ";
-    for (std::size_t i = 0; i < static_cast<std::size_t>(nnz); ++i) {
-        std::cout << ja_host[i] << " ";
-    }
-    std::cout << "\n";
-    std::cout << "a_host2: ";
-    for (std::size_t i = 0; i < static_cast<std::size_t>(nnz); ++i) {
-        std::cout << a_host[i] << " ";
-    }
-    std::cout << "\n";
 
     // Compute reference.
     prepare_reference_spmm_data(format, ia_host.data(), ja_host.data(), a_host.data(), nrows_A,

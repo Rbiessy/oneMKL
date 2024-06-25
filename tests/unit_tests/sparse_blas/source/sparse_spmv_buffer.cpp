@@ -47,22 +47,6 @@ int test_spmv(sycl::device *dev, sparse_matrix_format_t format, intType nrows_A,
         matrix_properties.find(oneapi::mkl::sparse::matrix_property::symmetric) !=
         matrix_properties.cend();
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Weverything"
-    std::cout << "Running spmv";
-    std::cout << " format=" << (int)format;
-    std::cout << " nrows_A=" << nrows_A;
-    std::cout << " ncols_A=" << ncols_A;
-    std::cout << " index=" << (int)index;
-    std::cout << " transpose_val=" << (int)transpose_val;
-    std::cout << " alpha=" << alpha;
-    std::cout << " beta=" << beta;
-    std::cout << " alg=" << (int)alg;
-    std::cout << " A_view=" << (int)A_view.type_view << " " << (int)A_view.uplo_view << " " << (int)A_view.diag_view;
-    std::cout << " is_sorted=" << (int)is_sorted << " is_symmetric=" << (int)is_symmetric;
-    std::cout << std::endl;
-#pragma clang diagnostic pop
-
     // Input matrix
     std::vector<intType> ia_host, ja_host;
     std::vector<fpType> a_host;
@@ -82,22 +66,6 @@ int test_spmv(sycl::device *dev, sparse_matrix_format_t format, intType nrows_A,
         shuffle_sparse_matrix(main_queue, format, indexing, ia_host.data(), ja_host.data(), a_host.data(), nnz,
                               static_cast<std::size_t>(nrows_A));
     }
-
-    std::cout << "ia_host: ";
-    for (std::size_t i = 0; i < (format == sparse_matrix_format_t::CSR ? static_cast<std::size_t>(nrows_A) + 1 : static_cast<std::size_t>(nnz)); ++i) {
-        std::cout << ia_host[i] << " ";
-    }
-    std::cout << "\n";
-    std::cout << "ja_host: ";
-    for (std::size_t i = 0; i < static_cast<std::size_t>(nnz); ++i) {
-        std::cout << ja_host[i] << " ";
-    }
-    std::cout << "\n";
-    std::cout << "a_host: ";
-    for (std::size_t i = 0; i < static_cast<std::size_t>(nnz); ++i) {
-        std::cout << a_host[i] << " ";
-    }
-    std::cout << "\n";
 
     auto ia_buf = make_buffer(ia_host);
     auto ja_buf = make_buffer(ja_host);

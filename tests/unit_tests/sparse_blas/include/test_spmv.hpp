@@ -220,20 +220,6 @@ void prepare_reference_spmv_data(sparse_matrix_format_t format, const intType *i
     auto dense_opa =
         sparse_to_dense(format, ia, ja, a, a_nrows_u, a_ncols_u, nnz, indexing, opA, A_view);
 
-    std::cout << "dense_opa:\n";
-    for (std::size_t i = 0; i < opa_nrows; ++i) {
-        for (std::size_t j = 0; j < opa_ncols; ++j) {
-            std::cout << dense_opa[i * opa_ncols + j] << " ";
-        }
-        std::cout << "\n";
-    }
-
-    std::cout << "x: ";
-    for (std::size_t i = 0; i < opa_ncols; ++i) {
-        std::cout << x[i] << " ";
-    }
-    std::cout << "\n";
-
     //
     // do SPMV operation
     //
@@ -246,12 +232,6 @@ void prepare_reference_spmv_data(sparse_matrix_format_t format, const intType *i
         }
         y_ref[row] = alpha * acc + beta * y_ref[row];
     }
-
-    std::cout << "y_ref: ";
-    for (std::size_t i = 0; i < opa_nrows; ++i) {
-        std::cout << y_ref[i] << " ";
-    }
-    std::cout << "\n";
 }
 
 #endif // _TEST_SPMV_HPP__

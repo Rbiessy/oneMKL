@@ -172,7 +172,6 @@ std::vector<fpType> sparse_to_dense(sparse_matrix_format_t format, const intType
         type_view == oneapi::mkl::sparse::matrix_descr::hermitian;
     const bool apply_conjugate = transpose_val == oneapi::mkl::transpose::conjtrans;
     std::vector<fpType> dense_a(a_nrows * a_ncols, fpType(0));
-    std::cout << "sparse_to_dense:\n";
     auto write_to_dense_if_needed = [&](std::size_t a_idx, std::size_t row, std::size_t col) {
         if ((type_view == oneapi::mkl::sparse::matrix_descr::triangular ||
              is_symmetric_or_hermitian_view) &&
@@ -191,7 +190,6 @@ std::vector<fpType> sparse_to_dense(sparse_matrix_format_t format, const intType
                 ? col * a_nrows + row
                 : row * a_ncols + col;
         fpType val = opVal(a[a_idx], apply_conjugate);
-        std::cout << "a_idx=" << a_idx << " row=" << row << " col=" << col << " dense_a_idx=" << dense_a_idx << " val=" << val << std::endl;
         dense_a[dense_a_idx] = val;
     };
 

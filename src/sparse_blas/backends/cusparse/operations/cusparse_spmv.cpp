@@ -32,7 +32,7 @@ namespace oneapi::mkl::sparse {
 // Complete the definition of the incomplete type
 struct spmv_descr {
     detail::generic_container workspace;
-    std::size_t temp_buffer_size = 0;   // TODO(Romain): Test temp_buffer_size is > 0 in some tests
+    std::size_t temp_buffer_size = 0;
 };
 
 } // namespace oneapi::mkl::sparse
@@ -96,7 +96,6 @@ void spmv_buffer_size(sycl::queue &queue, oneapi::mkl::transpose opA, const void
     auto event = dispatch_submit(__FUNCTION__, queue, functor, A_handle, x_handle, y_handle);
     event.wait_and_throw();
     spmv_descr->temp_buffer_size = temp_buffer_size;
-    std::cout << "temp_buffer_size=" << temp_buffer_size << std::endl;
 }
 
 void spmv_optimize_impl(cusparseHandle_t cu_handle, oneapi::mkl::transpose opA, const void *alpha,

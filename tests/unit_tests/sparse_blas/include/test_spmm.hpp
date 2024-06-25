@@ -58,23 +58,22 @@ void test_helper_with_format_with_transpose(
     const std::vector<oneapi::mkl::sparse::spmm_alg> &non_default_algorithms,
     oneapi::mkl::transpose transpose_A, oneapi::mkl::transpose transpose_B, int &num_passed,
     int &num_skipped) {
-    double density_A_matrix = 0.5;
+    double density_A_matrix = 0.8;
     fpType fp_zero = set_fp_value<fpType>()(0.f, 0.f);
     fpType fp_one = set_fp_value<fpType>()(1.f, 0.f);
     oneapi::mkl::index_base index_zero = oneapi::mkl::index_base::zero;
     oneapi::mkl::layout col_major = oneapi::mkl::layout::col_major;
-    int m = 4, k = 2, n = 5;
+    int m = 4, k = 6, n = 5;
     int     nrows_A     = (transpose_A != oneapi::mkl::transpose::nontrans) ? k : m;
     int     ncols_A     = (transpose_A != oneapi::mkl::transpose::nontrans) ? m : k;
     int     nrows_B     = (transpose_B != oneapi::mkl::transpose::nontrans) ? n : k;
-    int     ncols_B     = (transpose_B != oneapi::mkl::transpose::nontrans) ? k : n;
     int     nrows_C     = m;
     int     ncols_C     = n;
     int ldb = nrows_B;
     int ldc = nrows_C;
     oneapi::mkl::sparse::spmm_alg default_alg = oneapi::mkl::sparse::spmm_alg::default_alg;
     oneapi::mkl::sparse::matrix_view default_A_view;
-    std::set<oneapi::mkl::sparse::matrix_property> no_properties/*{ oneapi::mkl::sparse::matrix_property::sorted }*/;   // TODO(Romain): Confirm sorted is required
+    std::set<oneapi::mkl::sparse::matrix_property> no_properties;
     bool no_reset_data = false;
 
     // Basic test
@@ -159,7 +158,6 @@ void test_helper_with_format_with_transpose(
     }
     // Test matrix properties
     for (auto properties : test_matrix_properties) {
-    // TODO(Romain): Confirm sorted is required
         EXPECT_TRUE_OR_FUTURE_SKIP(
             test_functor_i32(dev, format, nrows_A, ncols_A, ncols_C, density_A_matrix, index_zero,
                              col_major, transpose_A, transpose_B, fp_one, fp_zero, ldb, ldc,
@@ -187,9 +185,6 @@ void test_helper_with_format(
     sparse_matrix_format_t format,
     const std::vector<oneapi::mkl::sparse::spmm_alg> &non_default_algorithms, int &num_passed,
     int &num_skipped) {
-    /*test_helper_with_format_with_transpose<fpType>(
-        test_functor_i32, test_functor_i64, dev, format, non_default_algorithms,
-        oneapi::mkl::transpose::trans, oneapi::mkl::transpose::nontrans, num_passed, num_skipped);*/
     std::vector<oneapi::mkl::transpose> transpose_vals{ oneapi::mkl::transpose::nontrans,
                                                         oneapi::mkl::transpose::trans };
     if (complex_info<fpType>::is_complex) {
@@ -250,23 +245,9 @@ void prepare_reference_spmm_data(sparse_matrix_format_t format, const intType *i
     // dense_opa is always row major
     auto dense_opa =
         sparse_to_dense(format, ia, ja, a, a_nrows_u, a_ncols_u, nnz, indexing, opA, A_view);
-    std::cout << "dense_opa:\n";
-    for (std::size_t i = 0; i < opa_nrows; ++i) {
-        for (std::size_t j = 0; j < opa_ncols; ++j) {
-            std::cout << dense_opa[i * opa_ncols + j] << " ";
-        }
-        std::cout << "\n";
-    }
 
     // dense_opb is always row major and not transposed
     auto dense_opb = extract_dense_matrix(b, opa_ncols, c_ncols_u, ldb_u, opB, dense_matrix_layout);
-    std::cout << "dense_opb:\n";
-    for (std::size_t i = 0; i < opa_ncols; ++i) {
-        for (std::size_t j = 0; j < c_ncols_u; ++j) {
-            std::cout << dense_opb[i * c_ncols_u + j] << " ";
-        }
-        std::cout << "\n";
-    }
 
     // Return the linear index to access a dense matrix from
     auto dense_linear_idx = [=](std::size_t row, std::size_t col, std::size_t ld) {
@@ -284,22 +265,10 @@ void prepare_reference_spmm_data(sparse_matrix_format_t format, const intType *i
             fpType acc = 0;
             for (std::size_t i = 0; i < opa_ncols; i++) {
                 acc += dense_opa[row * opa_ncols + i] * dense_opb[i * c_ncols_u + col];
-                /*std::cout << "row=" << row << " col=" << col << " i=" << i << " A["
-                          << row * opa_ncols + i << "]=" << dense_opa[row * opa_ncols + i] << " B["
-                          << i * c_ncols_u + col << "]=" << dense_opb[i * c_ncols_u + col]
-                          << " acc=" << acc << "\n";*/
             }
             fpType &c = c_ref[dense_linear_idx(row, col, ldc_u)];
-            //std::cout << "C[" << dense_linear_idx(row, col, ldc_u) << "]=" << c_ref[dense_linear_idx(row, col, ldc_u)] << "\n";
             c = alpha * acc + beta * c;
         }
-    }
-    std::cout << "c_ref:\n";
-    for (std::size_t i = 0; i < opa_nrows; ++i) {
-        for (std::size_t j = 0; j < c_ncols_u; ++j) {
-            std::cout << c_ref[i * opa_nrows + j] << " ";
-        }
-        std::cout << "\n";
     }
 }
 

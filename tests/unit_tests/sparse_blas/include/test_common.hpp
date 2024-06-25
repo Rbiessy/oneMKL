@@ -123,23 +123,23 @@ void fill_buffer_to_0(sycl::queue queue, sycl::buffer<T, 1> dst) {
 }
 
 template <typename OutT, typename XT, typename YT>
-std::pair<OutT, OutT> swap_cond(bool no_swap, XT x, YT y) {
-    if (no_swap) {
-        return { static_cast<OutT>(x), static_cast<OutT>(y) };
+std::pair<OutT, OutT> swap_if_cond(bool swap, XT x, YT y) {
+    if (swap) {
+        return { static_cast<OutT>(y), static_cast<OutT>(x) };
     }
     else {
-        return { static_cast<OutT>(y), static_cast<OutT>(x) };
+        return { static_cast<OutT>(x), static_cast<OutT>(y) };
     }
 }
 
 template <typename T>
-auto swap_cond(bool no_swap, T x, T y) {
-    return swap_cond<T, T, T>(no_swap, x, y);
+auto swap_if_cond(bool swap, T x, T y) {
+    return swap_if_cond<T, T, T>(swap, x, y);
 }
 
 template <typename OutT, typename XT, typename YT>
 auto swap_if_transposed(oneapi::mkl::transpose op, XT x, YT y) {
-    return swap_cond<OutT, XT, YT>(op == oneapi::mkl::transpose::nontrans, x, y);
+    return swap_if_cond<OutT, XT, YT>(op != oneapi::mkl::transpose::nontrans, x, y);
 }
 
 template <typename T>
@@ -191,19 +191,16 @@ void rand_matrix(std::vector<fpType> &m, oneapi::mkl::layout layout_val, std::si
                  std::size_t ncols, std::size_t ld, oneapi::mkl::transpose transpose_val = oneapi::mkl::transpose::nontrans) {
     using fpRealType = typename complex_info<fpType>::real_type;
     auto [op_nrows, op_cols] = swap_if_transposed(transpose_val, nrows, ncols);
-    auto [outer_size, inner_size] = swap_cond(layout_val == oneapi::mkl::layout::col_major, op_cols, op_nrows);
+    auto [outer_size, inner_size] = swap_if_cond(layout_val != oneapi::mkl::layout::col_major, op_cols, op_nrows);
     if (inner_size > ld) {
         throw std::runtime_error("Expected inner_size <= ld");
     }
     m.resize(outer_size * ld);
     rand_scalar<fpType> rand;
-    //std::cout << "rand_matrix\n";
     for (std::size_t i = 0; i < outer_size; ++i) {
         std::size_t j = 0;
         for (; j < inner_size; ++j) {
-            //std::cout << "i=" << i << " j=" << j << " idx=" << i * ld + j << "\n";
             m[i * ld + j] = rand(fpRealType(-0.5), fpRealType(0.5));
-            //m[i * ld + j] = fpRealType(i * ld + j);
         }
         for (; j < ld; ++j) {
             m[i * ld + j] = set_fp_value<fpType>()(-1.f, 0.f);
@@ -236,7 +233,6 @@ intType generate_random_csr_matrix(const intType nrows, const intType ncols,
                                    bool require_diagonal = false) {
     intType nnz = 0;
     rand_scalar<double> rand_density;
-    fpType x = 0;
 
     ia.push_back(indexing); // starting index of row0.
     for (intType i = 0; i < nrows; i++) {
@@ -267,7 +263,6 @@ intType generate_random_csr_matrix(const intType nrows, const intType ncols,
             const bool force_last_nnz = nnz == 0 && i == nrows - 1 && j == ncols - 1;
             if (force_last_nnz || is_diag || (rand_density(0.0, 1.0) <= density_val)) {
                 a.push_back(generate_data<fpType>(is_diag));
-                //a.push_back(x += 1);
                 ja.push_back(j + indexing);
                 nnz++;
             }
@@ -288,7 +283,6 @@ intType generate_random_coo_matrix(const intType nrows, const intType ncols,
                                    std::vector<fpType> &a, bool is_symmetric,
                                    bool require_diagonal = false) {
     rand_scalar<double> rand_density;
-    fpType x = 0;
 
     for (intType i = 0; i < nrows; i++) {
         if (is_symmetric) {
@@ -314,7 +308,6 @@ intType generate_random_coo_matrix(const intType nrows, const intType ncols,
             const bool force_last_nnz = a.size() == 0 && i == nrows - 1 && j == ncols - 1;
             if (force_last_nnz || is_diag || (rand_density(0.0, 1.0) <= density_val)) {
                 a.push_back(generate_data<fpType>(is_diag));
-                //a.push_back(x += 1);
                 ia.push_back(i + indexing);
                 ja.push_back(j + indexing);
             }

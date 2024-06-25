@@ -73,28 +73,6 @@ int test_spmm(sycl::device *dev, sparse_matrix_format_t format, intType nrows_A,
         shuffle_sparse_matrix(main_queue, format, indexing, ia_host.data(), ja_host.data(), a_host.data(), nnz,
                               static_cast<std::size_t>(nrows_A));
     }
-    
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Weverything"
-    std::cout << "Running spmm";
-    std::cout << " format=" << (int)format;
-    std::cout << " nrows_A=" << nrows_A;
-    std::cout << " ncols_A=" << ncols_A;
-    std::cout << " ncols_C=" << ncols_C;
-    std::cout << " index=" << (int)index;
-    std::cout << " dense_matrix_layout=" << (int)dense_matrix_layout;
-    std::cout << " transpose_A=" << (int)transpose_A;
-    std::cout << " transpose_B=" << (int)transpose_B;
-    std::cout << " alpha=" << alpha;
-    std::cout << " beta=" << beta;
-    std::cout << " ldb=" << ldb;
-    std::cout << " ldc=" << ldc;
-    std::cout << " alg=" << (int)alg;
-    std::cout << " A_view=" << (int)A_view.type_view << " " << (int)A_view.uplo_view << " " << (int)A_view.diag_view;
-    std::cout << " is_sorted=" << (int)is_sorted << " is_symmetric=" << (int)is_symmetric;
-    std::cout << " nnz=" << nnz;
-    std::cout << std::endl;
-#pragma clang diagnostic pop
 
     auto ia_buf = make_buffer(ia_host);
     auto ja_buf = make_buffer(ja_host);
