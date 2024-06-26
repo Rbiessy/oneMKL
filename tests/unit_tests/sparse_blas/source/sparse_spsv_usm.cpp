@@ -43,6 +43,20 @@ int test_spsv(sycl::device *dev, sparse_matrix_format_t format, intType m, doubl
         matrix_properties.find(oneapi::mkl::sparse::matrix_property::symmetric) !=
         matrix_properties.cend();
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Weverything"
+    std::cout << "Running spsv";
+    std::cout << " format=" << (int)format;
+    std::cout << " m=" << m;
+    std::cout << " index=" << (int)index;
+    std::cout << " transpose_val=" << (int)transpose_val;
+    std::cout << " alpha=" << alpha;
+    std::cout << " alg=" << (int)alg;
+    std::cout << " A_view=" << (int)A_view.type_view << " " << (int)A_view.uplo_view << " " << (int)A_view.diag_view;
+    std::cout << " is_sorted=" << (int)is_sorted << " is_symmetric=" << (int)is_symmetric;
+    std::cout << std::endl;
+#pragma clang diagnostic pop
+
     // Input matrix
     std::vector<intType> ia_host, ja_host;
     std::vector<fpType> a_host;
@@ -58,6 +72,11 @@ int test_spsv(sycl::device *dev, sparse_matrix_format_t format, intType m, doubl
     // The input `x` is initialized to random values on host and device.
     std::vector<fpType> x_host;
     rand_vector(x_host, mu);
+    std::cout << "x: ";
+    for (std::size_t i = 0; i < mu; ++i) {
+        std::cout << x_host[i] << " ";
+    }
+    std::cout << "\n";
 
     // Output and reference dense vectors.
     // They are both initialized with a dummy value to catch more errors.
@@ -69,6 +88,22 @@ int test_spsv(sycl::device *dev, sparse_matrix_format_t format, intType m, doubl
         shuffle_sparse_matrix(main_queue, format, indexing, ia_host.data(), ja_host.data(), a_host.data(), nnz,
                               mu);
     }
+    std::cout << "nnz=" << nnz << "\n";
+    std::cout << "ia_host: ";
+    for (std::size_t i = 0; i < (format == sparse_matrix_format_t::CSR ? static_cast<std::size_t>(m) + 1 : static_cast<std::size_t>(nnz)); ++i) {
+        std::cout << ia_host[i] << " ";
+    }
+    std::cout << "\n";
+    std::cout << "ja_host: ";
+    for (std::size_t i = 0; i < static_cast<std::size_t>(nnz); ++i) {
+        std::cout << ja_host[i] << " ";
+    }
+    std::cout << "\n";
+    std::cout << "a_host: ";
+    for (std::size_t i = 0; i < static_cast<std::size_t>(nnz); ++i) {
+        std::cout << a_host[i] << " ";
+    }
+    std::cout << std::endl;
 
     auto ia_usm_uptr = malloc_device_uptr<intType>(main_queue, ia_host.size());
     auto ja_usm_uptr = malloc_device_uptr<intType>(main_queue, ja_host.size());

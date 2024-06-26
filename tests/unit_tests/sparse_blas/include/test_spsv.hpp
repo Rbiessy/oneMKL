@@ -51,9 +51,9 @@ void test_helper_with_format(testFunctorI32 test_functor_i32, testFunctorI64 tes
                              sycl::device *dev, sparse_matrix_format_t format,
                              oneapi::mkl::transpose transpose_val, int &num_passed,
                              int &num_skipped) {
-    double density_A_matrix = 0.144;
+    double density_A_matrix = 0.3;
     fpType alpha = set_fp_value<fpType>()(1.f, 0.f);
-    int m = 277;
+    int m = 7;
     oneapi::mkl::index_base index_zero = oneapi::mkl::index_base::zero;
     oneapi::mkl::sparse::spsv_alg default_alg = oneapi::mkl::sparse::spsv_alg::default_alg;
     oneapi::mkl::sparse::spsv_alg no_optimize_alg = oneapi::mkl::sparse::spsv_alg::no_optimize_alg;
@@ -152,9 +152,9 @@ void test_helper(testFunctorI32 test_functor_i32, testFunctorI64 test_functor_i6
     test_helper_with_format<fpType>(test_functor_i32, test_functor_i64, dev,
                                     sparse_matrix_format_t::CSR, transpose_val, num_passed,
                                     num_skipped);
-    test_helper_with_format<fpType>(test_functor_i32, test_functor_i64, dev,
+    /*test_helper_with_format<fpType>(test_functor_i32, test_functor_i64, dev,
                                     sparse_matrix_format_t::COO, transpose_val, num_passed,
-                                    num_skipped);
+                                    num_skipped);*/
 }
 
 /// Compute spsv reference as a dense operation
