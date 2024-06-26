@@ -85,15 +85,8 @@ void test_helper_with_format_with_transpose(
                             col_major, transpose_A, transpose_B, fp_one, fp_zero, ldb, ldc,
                             default_alg, default_A_view, no_properties, no_reset_data),
             num_passed, num_skipped);
-        // Test row major layout TODO(Romain): Remove this occurrence
-        EXPECT_TRUE_OR_FUTURE_SKIP(
-            test_functor_i32(dev, format, nrows_A, ncols_A, ncols_C, density_A_matrix, index_zero,
-                            oneapi::mkl::layout::row_major, transpose_A, transpose_B, fp_one, fp_zero,
-                            ncols_B, ncols_C, default_alg, default_A_view, no_properties,
-                            no_reset_data),
-            num_passed, num_skipped);
         // Reset data
-        /*EXPECT_TRUE_OR_FUTURE_SKIP(
+        EXPECT_TRUE_OR_FUTURE_SKIP(
             test_functor_i32(dev, format, nrows_A, ncols_A, ncols_C, density_A_matrix, index_zero,
                             col_major, transpose_A, transpose_B, fp_one, fp_zero, ldb, ldc,
                             default_alg, default_A_view, no_properties, true),
@@ -173,7 +166,7 @@ void test_helper_with_format_with_transpose(
                                 col_major, transpose_A, transpose_B, fp_one, fp_zero, ldb, ldc,
                                 default_alg, default_A_view, properties, no_reset_data),
                 num_passed, num_skipped);
-        }*/
+        }
     }
     {
         // Test different sizes
