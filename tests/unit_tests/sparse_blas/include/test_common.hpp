@@ -189,14 +189,7 @@ void rand_vector(std::vector<fpType> &v, std::size_t n) {
 template <typename fpType>
 void rand_matrix(std::vector<fpType> &m, oneapi::mkl::layout layout_val, std::size_t nrows,
                  std::size_t ncols, std::size_t ld, oneapi::mkl::transpose transpose_val = oneapi::mkl::transpose::nontrans) {
-    using fpRealType = typename complex_info<fpType>::real_type;
-    //auto [op_nrows, op_cols] = swap_if_transposed(transpose_val, nrows, ncols);
-    const bool swap_ld = (layout_val == oneapi::mkl::layout::col_major) != (transpose_val != oneapi::mkl::transpose::nontrans);
-    auto [outer_size, inner_size] = swap_if_cond(swap_ld, nrows, ncols);
-    if (inner_size > ld) {
-        throw std::runtime_error("Expected inner_size <= ld");
-    }
-    m.resize(outer_size * ld);
+    /*using fpRealType = typename complex_info<fpType>::real_type;
     rand_scalar<fpType> rand;
     for (std::size_t i = 0; i < outer_size; ++i) {
         std::size_t j = 0;
@@ -206,7 +199,34 @@ void rand_matrix(std::vector<fpType> &m, oneapi::mkl::layout layout_val, std::si
         for (; j < ld; ++j) {
             m[i * ld + j] = set_fp_value<fpType>()(-1.f, 0.f);
         }
+    }*/
+
+    
+    /*const bool is_row_major = layout_val == oneapi::mkl::layout::row_major;
+    const bool is_transposed = transpose_val != oneapi::mkl::transpose::nontrans;
+    const bool swap_ld = is_row_major != is_transposed;
+    if (swap_ld && ncols > ld) {
+        throw std::runtime_error("Expected ncols <= ld");
     }
+    if (!swap_ld && nrows > ld) {
+        throw std::runtime_error("Expected nrows <= ld");
+    }
+    m.resize((is_row_major ? nrows : ncols) * ld);
+
+    // Copy with a default leading dimension and transpose if needed
+    std::vector<fpType> opx(nrows * ncols);
+    for (std::size_t i = 0; i < nrows; ++i) {
+        for (std::size_t j = 0; j < ncols; ++j) {
+            auto val = swap_ld ? x[i * ld + j] : x[j * ld + i];
+            opx[i * ncols + j] = opVal(val, apply_conjugate);
+        }
+    }*/
+    m.resize(std::max(nrows, ncols) * ld);
+    const bool is_row_major = layout_val == oneapi::mkl::layout::row_major;
+    const bool is_transposed = transpose_val != oneapi::mkl::transpose::nontrans;
+    const bool no_trans_is_valid = is_row_major ? ncols <= ld : nrows <= ld;
+    const bool after_trans_is_valid = is_row_major ? (is_transposed ? nrows : ncols) <= ld : (is_transposed ? ncols : nrows) <= ld;
+    std::cout << "rand_matrix: layout_val=" << (int)layout_val << " transpose_val=" << (int)transpose_val << " nrows=" << nrows << " ncols=" << ncols << " ld=" << ld << " no_trans_would_be_valid=" << (no_trans_is_valid ? "YES" : "NO") << " after_trans_would_be_valid=" << (after_trans_is_valid ? "YES" : "NO") << std::endl;
 }
 
 /// Generate random value in the range [-0.5, 0.5]

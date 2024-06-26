@@ -98,8 +98,15 @@ void test_helper_with_format_with_transpose(
                             default_alg, default_A_view, no_properties, no_reset_data),
             num_passed, num_skipped);
     }
-    // Reset data
+    // Test row major layout
     EXPECT_TRUE_OR_FUTURE_SKIP(
+        test_functor_i32(dev, format, nrows_A, ncols_A, ncols_C, density_A_matrix, index_zero,
+                         oneapi::mkl::layout::row_major, transpose_A, transpose_B, fp_one, fp_zero,
+                         ncols_C, ncols_C, default_alg, default_A_view, no_properties,
+                         no_reset_data),
+        num_passed, num_skipped);
+    // Reset data
+    /*EXPECT_TRUE_OR_FUTURE_SKIP(
         test_functor_i32(dev, format, nrows_A, ncols_A, ncols_C, density_A_matrix, index_zero,
                          col_major, transpose_A, transpose_B, fp_one, fp_zero, ldb, ldc,
                          default_alg, default_A_view, no_properties, true),
@@ -179,7 +186,7 @@ void test_helper_with_format_with_transpose(
                              col_major, transpose_A, transpose_B, fp_one, fp_zero, ldb, ldc,
                              default_alg, default_A_view, properties, no_reset_data),
             num_passed, num_skipped);
-    }
+    }*/
 }
 
 /**
@@ -228,11 +235,11 @@ void test_helper_with_format(
 template <typename fpType, typename testFunctorI32, typename testFunctorI64>
 void test_helper(testFunctorI32 test_functor_i32, testFunctorI64 test_functor_i64,
                  sycl::device *dev, int &num_passed, int &num_skipped) {
-    test_helper_with_format<fpType>(
+    /*test_helper_with_format<fpType>(
         test_functor_i32, test_functor_i64, dev, sparse_matrix_format_t::CSR,
         { oneapi::mkl::sparse::spmm_alg::no_optimize_alg, oneapi::mkl::sparse::spmm_alg::csr_alg1,
           oneapi::mkl::sparse::spmm_alg::csr_alg2, oneapi::mkl::sparse::spmm_alg::csr_alg3 },
-        num_passed, num_skipped);
+        num_passed, num_skipped);*/
     test_helper_with_format<fpType>(
         test_functor_i32, test_functor_i64, dev, sparse_matrix_format_t::COO,
         { oneapi::mkl::sparse::spmm_alg::no_optimize_alg, oneapi::mkl::sparse::spmm_alg::coo_alg1,

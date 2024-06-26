@@ -61,6 +61,7 @@ int test_spmm(sycl::device *dev, sparse_matrix_format_t format, intType nrows_A,
                                                 indexing, ia_host, ja_host, a_host, is_symmetric);
 
     // Input and output dense vectors
+    std::cout << "Running spmm nrows_A=" << nrows_A << " ncols_A=" << ncols_A << " ncols_C=" << ncols_C << " transpose_A=" << transpose_A << " transpose_B=" << transpose_B << std::endl;
     std::vector<fpType> b_host, c_host;
     rand_matrix(b_host, dense_matrix_layout, opa_ncols, static_cast<std::size_t>(ncols_C),
                 static_cast<std::size_t>(ldb), transpose_B);
