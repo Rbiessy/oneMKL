@@ -198,6 +198,7 @@ int test_spmv(sycl::device *dev, sparse_matrix_format_t format, intType nrows_A,
     CALL_RT_OR_CT(ev_release_descr = oneapi::mkl::sparse::release_spmv_descr, main_queue, descr,
                   { ev_spmv });
     ev_release_descr.wait_and_throw();
+    ev_copy.wait_and_throw();
     free_handles(main_queue, { ev_spmv }, A_handle, x_handle, y_handle);
 
     // Compute reference.
@@ -206,7 +207,6 @@ int test_spmv(sycl::device *dev, sparse_matrix_format_t format, intType nrows_A,
                                 A_view, y_ref_host.data());
 
     // Compare the results of reference implementation and DPC++ implementation.
-    ev_copy.wait_and_throw();
     bool valid = check_equal_vector(y_host, y_ref_host);
 
     return static_cast<int>(valid);

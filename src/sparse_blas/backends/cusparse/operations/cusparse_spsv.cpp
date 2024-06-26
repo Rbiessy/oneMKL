@@ -186,8 +186,10 @@ sycl::event spsv(sycl::queue &queue, oneapi::mkl::transpose opA, const void *alp
         check_status(status, __FUNCTION__);
         sc.wait_stream(queue);
     };
-    return dispatch_submit(__FUNCTION__, queue, dependencies, functor, A_handle, x_handle,
+    auto event = dispatch_submit(__FUNCTION__, queue, dependencies, functor, A_handle, x_handle,
                            y_handle);
+    queue.wait_and_throw();
+    return event;
 }
 
 } // namespace oneapi::mkl::sparse::cusparse

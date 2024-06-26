@@ -51,9 +51,9 @@ void test_helper_with_format(testFunctorI32 test_functor_i32, testFunctorI64 tes
                              sycl::device *dev, sparse_matrix_format_t format,
                              oneapi::mkl::transpose transpose_val, int &num_passed,
                              int &num_skipped) {
-    double density_A_matrix = 0.3;
+    double density_A_matrix = 0.144;
     fpType alpha = set_fp_value<fpType>()(1.f, 0.f);
-    int m = 7;
+    int m = 277;
     oneapi::mkl::index_base index_zero = oneapi::mkl::index_base::zero;
     oneapi::mkl::sparse::spsv_alg default_alg = oneapi::mkl::sparse::spsv_alg::default_alg;
     oneapi::mkl::sparse::spsv_alg no_optimize_alg = oneapi::mkl::sparse::spsv_alg::no_optimize_alg;

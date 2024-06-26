@@ -54,6 +54,7 @@ int test_spsv(sycl::device *dev, sparse_matrix_format_t format, intType m, doubl
     std::cout << " alg=" << (int)alg;
     std::cout << " A_view=" << (int)A_view.type_view << " " << (int)A_view.uplo_view << " " << (int)A_view.diag_view;
     std::cout << " is_sorted=" << (int)is_sorted << " is_symmetric=" << (int)is_symmetric;
+    std::cout << " reset_data=" << (int)reset_data;
     std::cout << std::endl;
 #pragma clang diagnostic pop
 
@@ -204,7 +205,7 @@ int test_spsv(sycl::device *dev, sparse_matrix_format_t format, intType m, doubl
             CALL_RT_OR_CT(ev_spsv = oneapi::mkl::sparse::spsv, main_queue, transpose_val, &alpha,
                           A_view, A_handle, x_handle, y_handle, alg, descr, { ev_opt });
         }
-
+        //main_queue.wait_and_throw();
         ev_copy = main_queue.memcpy(y_host.data(), y_usm, y_host.size() * sizeof(fpType), ev_spsv);
     }
     catch (const sycl::exception &e) {
@@ -227,6 +228,7 @@ int test_spsv(sycl::device *dev, sparse_matrix_format_t format, intType m, doubl
         std::cout << "Error raised during execution of sparse SPSV:\n" << error.what() << std::endl;
         return 0;
     }
+    ev_copy.wait_and_throw();
     sycl::event ev_release_descr;
     CALL_RT_OR_CT(ev_release_descr = oneapi::mkl::sparse::release_spsv_descr, main_queue, descr,
                   { ev_spsv });
@@ -239,7 +241,6 @@ int test_spsv(sycl::device *dev, sparse_matrix_format_t format, intType m, doubl
                                 y_ref_host.data());
 
     // Compare the results of reference implementation and DPC++ implementation.
-    ev_copy.wait_and_throw();
     bool valid = check_equal_vector(y_host, y_ref_host);
 
     return static_cast<int>(valid);
