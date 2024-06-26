@@ -208,6 +208,7 @@ sycl::event spmv(sycl::queue &queue, oneapi::mkl::transpose opA, const void *alp
             auto status = cusparseSpMV(cu_handle, cu_op, alpha, cu_a, cu_x, beta, cu_y, cu_type,
                                        cu_alg, workspace_ptr);
             check_status(status, __FUNCTION__);
+            sc.wait_stream(queue);
         };
         sycl::accessor<std::uint8_t, 1> workspace_placeholder_acc(
             spmv_descr->workspace.get_buffer<std::uint8_t>());
@@ -242,6 +243,7 @@ sycl::event spmv(sycl::queue &queue, oneapi::mkl::transpose opA, const void *alp
             auto status = cusparseSpMV(cu_handle, cu_op, alpha_ptr, cu_a, cu_x, beta_ptr, cu_y, cu_type,
                                        cu_alg, workspace_ptr);
             check_status(status, __FUNCTION__);
+            sc.wait_stream(queue);
         };
         return dispatch_submit(__FUNCTION__, queue, dependencies, functor, A_handle, x_handle,
                                y_handle);

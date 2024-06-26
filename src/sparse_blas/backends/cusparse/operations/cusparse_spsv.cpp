@@ -184,6 +184,7 @@ sycl::event spsv(sycl::queue &queue, oneapi::mkl::transpose opA, const void *alp
         auto status = cusparseSpSV_solve(cu_handle, cu_op, alpha, cu_a, cu_x, cu_y, cu_type, cu_alg,
                                          cu_descr);
         check_status(status, __FUNCTION__);
+        sc.wait_stream(queue);
     };
     return dispatch_submit(__FUNCTION__, queue, dependencies, functor, A_handle, x_handle,
                            y_handle);

@@ -197,6 +197,7 @@ sycl::event spmm(sycl::queue& queue, oneapi::mkl::transpose opA, oneapi::mkl::tr
             auto status = cusparseSpMM(cu_handle, cu_op_a, cu_op_b, alpha, cu_a, cu_b, beta, cu_c,
                                        cu_type, cu_alg, workspace_ptr);
             check_status(status, __FUNCTION__);
+            sc.wait_stream(queue);
         };
         sycl::accessor<std::uint8_t, 1> workspace_placeholder_acc(
             spmm_descr->workspace.get_buffer<std::uint8_t>());
@@ -220,6 +221,7 @@ sycl::event spmm(sycl::queue& queue, oneapi::mkl::transpose opA, oneapi::mkl::tr
             auto status = cusparseSpMM(cu_handle, cu_op_a, cu_op_b, alpha, cu_a, cu_b, beta, cu_c,
                                        cu_type, cu_alg, workspace_ptr);
             check_status(status, __FUNCTION__);
+            sc.wait_stream(queue);
         };
         return dispatch_submit(__FUNCTION__, queue, dependencies, functor, A_handle, B_handle,
                                C_handle);
