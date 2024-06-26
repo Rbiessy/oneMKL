@@ -73,6 +73,7 @@ void test_helper_with_format_with_transpose(
         int     nrows_A     = (transpose_A != oneapi::mkl::transpose::nontrans) ? k : m;
         int     ncols_A     = (transpose_A != oneapi::mkl::transpose::nontrans) ? m : k;
         int     nrows_B     = (transpose_B != oneapi::mkl::transpose::nontrans) ? n : k;
+        int     ncols_B     = (transpose_B != oneapi::mkl::transpose::nontrans) ? k : n;
         int     nrows_C     = m;
         int     ncols_C     = n;
         int ldb = nrows_B;
@@ -88,7 +89,7 @@ void test_helper_with_format_with_transpose(
         EXPECT_TRUE_OR_FUTURE_SKIP(
             test_functor_i32(dev, format, nrows_A, ncols_A, ncols_C, density_A_matrix, index_zero,
                             oneapi::mkl::layout::row_major, transpose_A, transpose_B, fp_one, fp_zero,
-                            ncols_C, ncols_C, default_alg, default_A_view, no_properties,
+                            ncols_B, ncols_C, default_alg, default_A_view, no_properties,
                             no_reset_data),
             num_passed, num_skipped);
         // Reset data
@@ -146,7 +147,7 @@ void test_helper_with_format_with_transpose(
         EXPECT_TRUE_OR_FUTURE_SKIP(
             test_functor_i32(dev, format, nrows_A, ncols_A, ncols_C, density_A_matrix, index_zero,
                             oneapi::mkl::layout::row_major, transpose_A, transpose_B, fp_one, fp_zero,
-                            ncols_C, ncols_C, default_alg, default_A_view, no_properties,
+                            ncols_B, ncols_C, default_alg, default_A_view, no_properties,
                             no_reset_data),
             num_passed, num_skipped);
         // Test int64 indices
