@@ -241,7 +241,10 @@ int test_spsv(sycl::device *dev, sparse_matrix_format_t format, intType m, doubl
                                 y_ref_host.data());
 
     // Compare the results of reference implementation and DPC++ implementation.
-    bool valid = check_equal_vector(y_host, y_ref_host);
+    // Increase default relative error margin for tests that lead to large numeric values.
+    double abs_error_factor = 10;
+    double rel_error_factor = 1E5;
+    bool valid = check_equal_vector(y_host, y_ref_host, abs_error_factor, rel_error_factor);
 
     return static_cast<int>(valid);
 }

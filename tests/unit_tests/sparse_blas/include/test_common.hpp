@@ -496,6 +496,7 @@ bool check_equal(fpType x, fpType x_ref, double abs_error_margin, double rel_err
     const fpRealType epsilon = std::numeric_limits<fpRealType>::epsilon();
     const auto abs_bound = static_cast<fpRealType>(abs_error_margin) * epsilon;
     const auto rel_bound = static_cast<fpRealType>(rel_error_margin) * epsilon;
+    std::cout << "abs_bound=" << abs_bound << std::endl;
 
     const auto aerr = std::abs(x - x_ref);
     const auto rerr = aerr / std::abs(x_ref);
