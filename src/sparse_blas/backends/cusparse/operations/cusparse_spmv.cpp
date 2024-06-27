@@ -197,7 +197,7 @@ sycl::event spmv(sycl::queue &queue, oneapi::mkl::transpose opA, const void *alp
         // greater than 0
         auto functor = [=](CusparseScopedContextHandler &sc,
                            sycl::accessor<std::uint8_t> workspace_acc) {
-            auto cu_handle = sc.get_handle(queue);
+            auto [cu_handle, cu_stream] = sc.get_handle_and_stream(queue);
             auto workspace_ptr = sc.get_mem(workspace_acc);
             auto cu_a = A_handle->backend_handle;
             auto cu_x = x_handle->backend_handle;
@@ -208,7 +208,7 @@ sycl::event spmv(sycl::queue &queue, oneapi::mkl::transpose opA, const void *alp
             auto status = cusparseSpMV(cu_handle, cu_op, alpha, cu_a, cu_x, beta, cu_y, cu_type,
                                        cu_alg, workspace_ptr);
             check_status(status, __FUNCTION__);
-            sc.wait_stream(queue);
+            CUDA_ERROR_FUNC(cuStreamSynchronize, cu_stream);
         };
         sycl::accessor<std::uint8_t, 1> workspace_placeholder_acc(
             spmv_descr->workspace.get_buffer<std::uint8_t>());
@@ -221,7 +221,7 @@ sycl::event spmv(sycl::queue &queue, oneapi::mkl::transpose opA, const void *alp
         // latter case.
         auto workspace_ptr = spmv_descr->workspace.usm_ptr;
         auto functor = [=](CusparseScopedContextHandler &sc) {
-            auto cu_handle = sc.get_handle(queue);
+            auto [cu_handle, cu_stream] = sc.get_handle_and_stream(queue);
             auto cu_a = A_handle->backend_handle;
             auto cu_x = x_handle->backend_handle;
             auto cu_y = y_handle->backend_handle;
@@ -243,7 +243,7 @@ sycl::event spmv(sycl::queue &queue, oneapi::mkl::transpose opA, const void *alp
             auto status = cusparseSpMV(cu_handle, cu_op, alpha_ptr, cu_a, cu_x, beta_ptr, cu_y, cu_type,
                                        cu_alg, workspace_ptr);
             check_status(status, __FUNCTION__);
-            sc.wait_stream(queue);
+            CUDA_ERROR_FUNC(cuStreamSynchronize, cu_stream);
         };
         return dispatch_submit(__FUNCTION__, queue, dependencies, functor, A_handle, x_handle,
                                y_handle);

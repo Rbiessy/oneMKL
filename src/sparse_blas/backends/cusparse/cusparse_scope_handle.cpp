@@ -82,7 +82,7 @@ void ContextCallback(void *userData) {
     }
 }
 
-cusparseHandle_t CusparseScopedContextHandler::get_handle(const sycl::queue &queue) {
+std::pair<cusparseHandle_t, CUstream> CusparseScopedContextHandler::get_handle_and_stream(const sycl::queue &queue) {
     auto cudaDevice = ih.get_native_device<sycl::backend::ext_oneapi_cuda>();
     CUcontext desired;
     CUDA_ERROR_FUNC(cuDevicePrimaryCtxRetain, &desired, cudaDevice);
@@ -101,7 +101,7 @@ cusparseHandle_t CusparseScopedContextHandler::get_handle(const sycl::queue &que
                 if (currentStreamId != streamId) {
                     CUSPARSE_ERR_FUNC(cusparseSetStream, handle, streamId);
                 }
-                return handle;
+                return {handle, streamId};
             }
             else {
                 handle_helper.cusparse_global_handle_mapper_.erase(it);
@@ -119,7 +119,11 @@ cusparseHandle_t CusparseScopedContextHandler::get_handle(const sycl::queue &que
     sycl::detail::pi::contextSetExtendedDeleter(*placedContext_, ContextCallback,
                                                 insert_iter.first->second);
 
-    return handle;
+    return {handle, streamId};
+}
+
+cusparseHandle_t CusparseScopedContextHandler::get_handle(const sycl::queue &queue) {
+    return get_handle_and_stream(queue).first;
 }
 
 CUstream CusparseScopedContextHandler::get_stream(const sycl::queue &queue) {

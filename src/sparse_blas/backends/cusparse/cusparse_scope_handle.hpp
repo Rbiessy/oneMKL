@@ -53,12 +53,15 @@ public:
     ~CusparseScopedContextHandler() noexcept(false);
 
     /**
-   * @brief get_handle: creates the handle by implicitly impose the advice
-   * given by nvidia for creating a cusparse_global_handle. (e.g. one cuStream per device
-   * per thread).
-   * @param queue sycl queue.
-   * @return cusparseHandle_t a handle to construct cusparse routines
-   */
+     * @brief get_handle: creates the handle by implicitly impose the advice
+     * given by nvidia for creating a cusparse_global_handle. (e.g. one cuStream per device
+     * per thread).
+     * @param queue sycl queue.
+     * @return a pair of: cusparseHandle_t a handle to construct cusparse routines; and a CUDA stream
+     */
+    std::pair<cusparseHandle_t, CUstream> get_handle_and_stream(const sycl::queue &queue);
+
+    /// See get_handle_and_stream
     cusparseHandle_t get_handle(const sycl::queue &queue);
 
     // This is a work-around function for reinterpret_casting the memory. This

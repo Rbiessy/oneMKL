@@ -152,9 +152,9 @@ void test_helper(testFunctorI32 test_functor_i32, testFunctorI64 test_functor_i6
     test_helper_with_format<fpType>(test_functor_i32, test_functor_i64, dev,
                                     sparse_matrix_format_t::CSR, transpose_val, num_passed,
                                     num_skipped);
-    /*test_helper_with_format<fpType>(test_functor_i32, test_functor_i64, dev,
+    test_helper_with_format<fpType>(test_functor_i32, test_functor_i64, dev,
                                     sparse_matrix_format_t::COO, transpose_val, num_passed,
-                                    num_skipped);*/
+                                    num_skipped);
 }
 
 /// Compute spsv reference as a dense operation

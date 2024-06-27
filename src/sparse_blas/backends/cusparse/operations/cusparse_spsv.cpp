@@ -172,7 +172,7 @@ sycl::event spsv(sycl::queue &queue, oneapi::mkl::transpose opA, const void *alp
         detail::throw_incompatible_container(__FUNCTION__);
     }
     auto functor = [=](CusparseScopedContextHandler &sc) {
-        auto cu_handle = sc.get_handle(queue);
+        auto [cu_handle, cu_stream] = sc.get_handle_and_stream(queue);
         auto cu_a = A_handle->backend_handle;
         auto cu_x = x_handle->backend_handle;
         auto cu_y = y_handle->backend_handle;
@@ -184,11 +184,10 @@ sycl::event spsv(sycl::queue &queue, oneapi::mkl::transpose opA, const void *alp
         auto status = cusparseSpSV_solve(cu_handle, cu_op, alpha, cu_a, cu_x, cu_y, cu_type, cu_alg,
                                          cu_descr);
         check_status(status, __FUNCTION__);
-        sc.wait_stream(queue);
+        CUDA_ERROR_FUNC(cuStreamSynchronize, cu_stream);
     };
     auto event = dispatch_submit(__FUNCTION__, queue, dependencies, functor, A_handle, x_handle,
                            y_handle);
-    queue.wait_and_throw();
     return event;
 }
 
