@@ -43,21 +43,6 @@ int test_spsv(sycl::device *dev, sparse_matrix_format_t format, intType m, doubl
         matrix_properties.find(oneapi::mkl::sparse::matrix_property::symmetric) !=
         matrix_properties.cend();
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Weverything"
-    std::cout << "Running spsv";
-    std::cout << " format=" << (int)format;
-    std::cout << " m=" << m;
-    std::cout << " index=" << (int)index;
-    std::cout << " transpose_val=" << (int)transpose_val;
-    std::cout << " alpha=" << alpha;
-    std::cout << " alg=" << (int)alg;
-    std::cout << " A_view=" << (int)A_view.type_view << " " << (int)A_view.uplo_view << " " << (int)A_view.diag_view;
-    std::cout << " is_sorted=" << (int)is_sorted << " is_symmetric=" << (int)is_symmetric;
-    std::cout << " reset_data=" << (int)reset_data;
-    std::cout << std::endl;
-#pragma clang diagnostic pop
-
     // Input matrix
     std::vector<intType> ia_host, ja_host;
     std::vector<fpType> a_host;
@@ -73,11 +58,6 @@ int test_spsv(sycl::device *dev, sparse_matrix_format_t format, intType m, doubl
     // The input `x` is initialized to random values on host and device.
     std::vector<fpType> x_host;
     rand_vector(x_host, mu);
-    std::cout << "x: ";
-    for (std::size_t i = 0; i < mu; ++i) {
-        std::cout << x_host[i] << " ";
-    }
-    std::cout << "\n";
 
     // Output and reference dense vectors.
     // They are both initialized with a dummy value to catch more errors.
@@ -89,22 +69,6 @@ int test_spsv(sycl::device *dev, sparse_matrix_format_t format, intType m, doubl
         shuffle_sparse_matrix(main_queue, format, indexing, ia_host.data(), ja_host.data(), a_host.data(), nnz,
                               mu);
     }
-    std::cout << "nnz=" << nnz << "\n";
-    std::cout << "ia_host: ";
-    for (std::size_t i = 0; i < (format == sparse_matrix_format_t::CSR ? static_cast<std::size_t>(m) + 1 : static_cast<std::size_t>(nnz)); ++i) {
-        std::cout << ia_host[i] << " ";
-    }
-    std::cout << "\n";
-    std::cout << "ja_host: ";
-    for (std::size_t i = 0; i < static_cast<std::size_t>(nnz); ++i) {
-        std::cout << ja_host[i] << " ";
-    }
-    std::cout << "\n";
-    std::cout << "a_host: ";
-    for (std::size_t i = 0; i < static_cast<std::size_t>(nnz); ++i) {
-        std::cout << a_host[i] << " ";
-    }
-    std::cout << std::endl;
 
     auto ia_usm_uptr = malloc_device_uptr<intType>(main_queue, ia_host.size());
     auto ja_usm_uptr = malloc_device_uptr<intType>(main_queue, ja_host.size());
@@ -205,7 +169,6 @@ int test_spsv(sycl::device *dev, sparse_matrix_format_t format, intType m, doubl
             CALL_RT_OR_CT(ev_spsv = oneapi::mkl::sparse::spsv, main_queue, transpose_val, &alpha,
                           A_view, A_handle, x_handle, y_handle, alg, descr, { ev_opt });
         }
-        //main_queue.wait_and_throw();
         ev_copy = main_queue.memcpy(y_host.data(), y_usm, y_host.size() * sizeof(fpType), ev_spsv);
     }
     catch (const sycl::exception &e) {
@@ -228,7 +191,6 @@ int test_spsv(sycl::device *dev, sparse_matrix_format_t format, intType m, doubl
         std::cout << "Error raised during execution of sparse SPSV:\n" << error.what() << std::endl;
         return 0;
     }
-    ev_copy.wait_and_throw();
     sycl::event ev_release_descr;
     CALL_RT_OR_CT(ev_release_descr = oneapi::mkl::sparse::release_spsv_descr, main_queue, descr,
                   { ev_spsv });
@@ -244,6 +206,7 @@ int test_spsv(sycl::device *dev, sparse_matrix_format_t format, intType m, doubl
     // Increase default relative error margin for tests that lead to large numeric values.
     double abs_error_factor = 10;
     double rel_error_factor = 1E5;
+    ev_copy.wait_and_throw();
     bool valid = check_equal_vector(y_host, y_ref_host, abs_error_factor, rel_error_factor);
 
     return static_cast<int>(valid);

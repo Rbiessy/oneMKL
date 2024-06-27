@@ -232,11 +232,11 @@ void test_helper_with_format(
 template <typename fpType, typename testFunctorI32, typename testFunctorI64>
 void test_helper(testFunctorI32 test_functor_i32, testFunctorI64 test_functor_i64,
                  sycl::device *dev, int &num_passed, int &num_skipped) {
-    /*test_helper_with_format<fpType>(
+    test_helper_with_format<fpType>(
         test_functor_i32, test_functor_i64, dev, sparse_matrix_format_t::CSR,
         { oneapi::mkl::sparse::spmm_alg::no_optimize_alg, oneapi::mkl::sparse::spmm_alg::csr_alg1,
           oneapi::mkl::sparse::spmm_alg::csr_alg2, oneapi::mkl::sparse::spmm_alg::csr_alg3 },
-        num_passed, num_skipped);*/
+        num_passed, num_skipped);
     test_helper_with_format<fpType>(
         test_functor_i32, test_functor_i64, dev, sparse_matrix_format_t::COO,
         { oneapi::mkl::sparse::spmm_alg::no_optimize_alg, oneapi::mkl::sparse::spmm_alg::coo_alg1,

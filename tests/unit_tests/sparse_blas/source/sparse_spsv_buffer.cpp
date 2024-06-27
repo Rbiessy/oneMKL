@@ -70,20 +70,6 @@ int test_spsv(sycl::device *dev, sparse_matrix_format_t format, intType m, doubl
                               mu);
     }
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Weverything"
-    std::cout << "Running spsv";
-    std::cout << " format=" << (int)format;
-    std::cout << " m=" << m;
-    std::cout << " index=" << (int)index;
-    std::cout << " transpose_val=" << (int)transpose_val;
-    std::cout << " alpha=" << alpha;
-    std::cout << " alg=" << (int)alg;
-    std::cout << " A_view=" << (int)A_view.type_view << " " << (int)A_view.uplo_view << " " << (int)A_view.diag_view;
-    std::cout << " is_sorted=" << (int)is_sorted << " is_symmetric=" << (int)is_symmetric;
-    std::cout << std::endl;
-#pragma clang diagnostic pop
-
     auto ia_buf = make_buffer(ia_host);
     auto ja_buf = make_buffer(ja_host);
     auto a_buf = make_buffer(a_host);
