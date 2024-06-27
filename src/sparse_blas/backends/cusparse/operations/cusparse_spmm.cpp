@@ -61,6 +61,13 @@ inline auto get_cuda_spmm_alg(spmm_alg alg) {
     }
 }
 
+inline void fallback_alg_if_needed(oneapi::mkl::sparse::spmm_alg &alg, oneapi::mkl::transpose opA, oneapi::mkl::transpose opB) {
+    if (alg == oneapi::mkl::sparse::spmm_alg::csr_alg3 && (opA != oneapi::mkl::transpose::nontrans || opB == oneapi::mkl::transpose::conjtrans)) {
+        // Avoid warnings printed on std::cerr
+        alg = oneapi::mkl::sparse::spmm_alg::default_alg;
+    }
+}
+
 void spmm_buffer_size(sycl::queue& queue, oneapi::mkl::transpose opA, oneapi::mkl::transpose opB,
                       const void* alpha, oneapi::mkl::sparse::matrix_view A_view,
                       oneapi::mkl::sparse::matrix_handle_t A_handle,
@@ -71,6 +78,7 @@ void spmm_buffer_size(sycl::queue& queue, oneapi::mkl::transpose opA, oneapi::mk
                       std::size_t& temp_buffer_size) {
     detail::check_valid_spmm_common(__FUNCTION__, queue, A_view, A_handle, B_handle, C_handle,
                                     alpha, beta);
+    fallback_alg_if_needed(alg, opA, opB);
     auto functor = [=, &temp_buffer_size](CusparseScopedContextHandler& sc) {
         auto cu_handle = sc.get_handle(queue);
         auto cu_a = A_handle->backend_handle;
@@ -125,6 +133,7 @@ void spmm_optimize(sycl::queue& queue, oneapi::mkl::transpose opA, oneapi::mkl::
         // cusparseSpMM_preprocess cannot be called if the workspace is empty
         return;
     }
+    fallback_alg_if_needed(alg, opA, opB);
     auto functor = [=](CusparseScopedContextHandler& sc,
                        sycl::accessor<std::uint8_t> workspace_acc) {
         auto cu_handle = sc.get_handle(queue);
@@ -158,6 +167,7 @@ sycl::event spmm_optimize(sycl::queue& queue, oneapi::mkl::transpose opA,
         // cusparseSpMM_preprocess cannot be called if the workspace is empty
         return detail::collapse_dependencies(queue, dependencies);
     }
+    fallback_alg_if_needed(alg, opA, opB);
     auto functor = [=](CusparseScopedContextHandler& sc) {
         auto cu_handle = sc.get_handle(queue);
         spmm_optimize_impl(cu_handle, opA, opB, alpha, A_handle, B_handle, beta, C_handle, alg,
@@ -180,6 +190,7 @@ sycl::event spmm(sycl::queue& queue, oneapi::mkl::transpose opA, oneapi::mkl::tr
     if (A_handle->all_use_buffer() != spmm_descr->workspace.use_buffer()) {
         detail::throw_incompatible_container(__FUNCTION__);
     }
+    fallback_alg_if_needed(alg, opA, opB);
     if (A_handle->all_use_buffer() && spmm_descr->temp_buffer_size > 0) {
         // The accessor can only be bound to the cgh if the buffer size is
         // greater than 0
