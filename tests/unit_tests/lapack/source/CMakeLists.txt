@@ -79,7 +79,7 @@ if(BUILD_SHARED_LIBS)
       PUBLIC ${CMAKE_BINARY_DIR}/bin
       PUBLIC ${LAPACKE_INCLUDE}
   )
-  target_link_libraries(lapack_source_rt PUBLIC ONEMKL::SYCL::SYCL)
+  target_link_libraries(lapack_source_rt PUBLIC ONEMATH::SYCL::SYCL)
 endif()
 
 add_library(lapack_source_ct OBJECT ${LAPACK_SOURCES})
@@ -92,4 +92,4 @@ target_include_directories(lapack_source_ct
     PUBLIC ${CMAKE_BINARY_DIR}/bin
     PUBLIC ${LAPACKE_INCLUDE}
 )
-target_link_libraries(lapack_source_ct PUBLIC ONEMKL::SYCL::SYCL)
+target_link_libraries(lapack_source_ct PUBLIC ONEMATH::SYCL::SYCL)
