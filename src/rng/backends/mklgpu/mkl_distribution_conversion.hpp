@@ -24,6 +24,7 @@
 
 #include <oneapi/mkl/rng.hpp>
 
+#include "common_onemkl_conversion.hpp"
 #include "oneapi/math/rng/distributions.hpp"
 
 namespace oneapi {
